@@ -30,8 +30,8 @@ function configureCors(app) {
 
 function setupSwagger(app) {
   const config = new DocumentBuilder()
-    .setTitle('Renault Club API')
-    .setDescription('REST API для сервиса Renault Club')
+    .setTitle('Taro App API')
+    .setDescription('REST API для сервиса Taro App')
     .setVersion('1.0')
     .build();
 
