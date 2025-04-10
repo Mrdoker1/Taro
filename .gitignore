@@ -36,6 +36,3 @@ jspm_packages/
 # Miscellaneous
 .DS_Store
 Thumbs.db
-
-# NestJS specific
-*.hbs
