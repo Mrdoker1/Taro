@@ -39,6 +39,6 @@ function setupSwagger(app) {
   SwaggerModule.setup('api', app, document);
 }
 
-bootstrap().catch((error) => {
+bootstrap().catch(error => {
   console.error('Error during bootstrap:', error);
 });

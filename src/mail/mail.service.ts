@@ -8,7 +8,7 @@ export class MailService {
   private transporter;
 
   constructor() {
-    this.initializeTransporter().catch((error) => {
+    this.initializeTransporter().catch(error => {
       console.error('Error initializing transporter:', error);
     });
   }

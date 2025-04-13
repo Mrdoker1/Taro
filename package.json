@@ -39,6 +39,7 @@
     "nestjs-resend": "^1.0.1",
     "nodemailer": "^6.10.0",
     "nodemailer-express-handlebars": "^7.0.0",
+    "openai": "^4.93.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "passport-local": "^1.0.0",

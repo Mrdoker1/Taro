@@ -34,6 +34,14 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off', 
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      'prettier/prettier': ['error', { 
+        singleQuote: true, 
+        trailingComma: 'all',
+        quoteProps: 'as-needed',
+        jsxSingleQuote: false,
+        arrowParens: 'avoid',
+        endOfLine: 'auto',
+      }],
     },
   },
 );
