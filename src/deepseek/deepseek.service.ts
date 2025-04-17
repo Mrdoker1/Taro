@@ -60,6 +60,9 @@ export class DeepseekService {
             error: true,
             message: 'Ответ не содержит обязательного поля message',
           };
+        } else if (!parsedResponse.error) {
+          // Явно устанавливаем error: false для успешных ответов
+          parsedResponse.error = false;
         }
       } catch {
         // Если не удалось распарсить JSON, возвращаем ошибку
@@ -70,12 +73,10 @@ export class DeepseekService {
         };
       }
       return {
-        response: {
-          ...parsedResponse,
-          tokens: completion.usage?.total_tokens || 0,
-          model: 'deepseek-chat',
-          zodiacSign: dto.zodiacSign || null, // Добавляем знак зодиака в ответ
-        },
+        ...parsedResponse,
+        tokens: completion.usage?.total_tokens || 0,
+        model: 'deepseek-chat',
+        zodiacSign: dto.zodiacSign || null, // Добавляем знак зодиака в ответ
       };
     } catch (error) {
       this.logger.error(`DeepSeek API error: ${error.message}`, error.stack);

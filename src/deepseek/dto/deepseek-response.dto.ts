@@ -2,23 +2,43 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class DeepseekResponseDto {
   @ApiProperty({
-    description: 'Ответ от DeepSeek API',
-    example: {
-      message:
-        'В следующем месяце Венера будет проходить через ваш дом любви, что может привести к новым романтическим знакомствам. Благоприятный период для укрепления существующих отношений наступит после 15 числа.',
-      tokens: 42,
-      model: 'deepseek-chat',
-      zodiacSign: 'Скорпион',
-    },
+    description: 'Сообщение-ответ от DeepSeek API',
+    example:
+      'В следующем месяце Венера будет проходить через ваш дом любви, что может привести к новым романтическим знакомствам. Благоприятный период для укрепления существующих отношений наступит после 15 числа.',
   })
-  response: {
-    message?: string;
-    error?: boolean;
-    tokens: number;
-    model: string;
-    rawResponse?: string;
-    zodiacSign?: string | null;
-  };
+  message?: string;
+
+  @ApiProperty({
+    description: 'Флаг ошибки, присутствует только в случае ошибки',
+    example: false,
+    required: false,
+  })
+  error?: boolean;
+
+  @ApiProperty({
+    description: 'Количество использованных токенов',
+    example: 42,
+  })
+  tokens: number;
+
+  @ApiProperty({
+    description: 'Используемая модель',
+    example: 'deepseek-chat',
+  })
+  model: string;
+
+  @ApiProperty({
+    description: 'Необработанный ответ в случае ошибки',
+    required: false,
+  })
+  rawResponse?: string;
+
+  @ApiProperty({
+    description: 'Знак зодиака',
+    example: 'Скорпион',
+    required: false,
+  })
+  zodiacSign?: string | null;
 }
 
 // Структура ответа для неастрологических запросов
