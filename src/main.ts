@@ -2,9 +2,22 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Добавляем глобальную трансформацию
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
+      whitelist: true, // Удаляет свойства, которых нет в DTO
+      forbidNonWhitelisted: false, // Не выбрасывает ошибку при лишних свойствах
+    }),
+  );
 
   configureCors(app);
   setupSwagger(app);
@@ -33,6 +46,7 @@ function setupSwagger(app) {
     .setTitle('Taro App API')
     .setDescription('REST API для сервиса Taro App')
     .setVersion('1.0')
+    .addBearerAuth() // Добавляем поддержку Bearer-авторизации
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
