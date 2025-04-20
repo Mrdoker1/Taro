@@ -8,6 +8,9 @@ import {
   Logger,
   Param,
   NotFoundException,
+  Query,
+  DefaultValuePipe,
+  BadRequestException,
 } from '@nestjs/common';
 import {
   ApiOperation,
@@ -18,6 +21,7 @@ import {
 } from '@nestjs/swagger';
 import { DecksService } from './decks.service';
 import { DeckSummaryDto, DeckDetailDto } from './dto/deck-response.dto';
+import { CardResponseDto } from './dto/card-response.dto';
 import { Request, Response } from 'express';
 
 @ApiTags('Decks')
@@ -225,5 +229,86 @@ export class DecksController {
     }
 
     return deck;
+  }
+
+  @Get(':deckId/cards/:cardId')
+  @ApiOperation({ summary: 'Получить информацию о карте из колоды' })
+  @ApiParam({
+    name: 'deckId',
+    description: 'Идентификатор колоды',
+    required: true,
+    example: 'rider',
+  })
+  @ApiParam({
+    name: 'cardId',
+    description: 'Идентификатор карты',
+    required: true,
+    example: 'the-fool',
+  })
+  @ApiQuery({
+    name: 'lang',
+    description: 'ISO-код языка локализации (ru, en, ...)',
+    required: false,
+    example: 'ru',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Информация о карте успешно получена',
+    type: CardResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Колода или карта не найдены',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Неверный параметр lang',
+  })
+  @ApiResponse({
+    status: HttpStatus.INTERNAL_SERVER_ERROR,
+    description: 'Внутренняя ошибка сервера',
+  })
+  async getCardFromDeck(
+    @Param('deckId') deckId: string,
+    @Param('cardId') cardId: string,
+    @Query('lang', new DefaultValuePipe('ru')) lang: string,
+    @Res() res: Response,
+  ) {
+    try {
+      // Получаем информацию о карте из сервиса
+      const cardData = await this.decksService.getCardFromDeck(
+        deckId,
+        cardId,
+        lang,
+      );
+
+      // Устанавливаем заголовок кэширования
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+
+      // Возвращаем успешный ответ
+      return res.status(HttpStatus.OK).json(cardData);
+    } catch (error) {
+      // Если колода или карта не найдены, возвращаем 404
+      if (error instanceof NotFoundException) {
+        return res.status(HttpStatus.NOT_FOUND).json({
+          statusCode: HttpStatus.NOT_FOUND,
+          message: error.message,
+        });
+      }
+
+      // Если неверный параметр языка, возвращаем 400
+      if (
+        error instanceof BadRequestException ||
+        (error.message && error.message.includes('язык'))
+      ) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: error.message,
+        });
+      }
+
+      // Обрабатываем другие ошибки
+      return this.handleError(error, res);
+    }
   }
 }

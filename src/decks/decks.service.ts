@@ -12,6 +12,7 @@ import {
   DeckDetailDto,
   DeckSummaryDto,
 } from './dto/deck-response.dto';
+import { CardResponseDto } from './dto/card-response.dto';
 
 /**
  * Сервис для работы с колодами Таро
@@ -93,6 +94,76 @@ export class DecksService {
     } catch (error) {
       this.logger.error(
         `Ошибка при получении колоды ${deckId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Получить карту из колоды по идентификатору
+   * @param deckId Идентификатор колоды
+   * @param cardId Идентификатор карты
+   * @param lang Код языка локализации
+   * @returns Информация о карте из указанной колоды
+   */
+  async getCardFromDeck(
+    deckId: string,
+    cardId: string,
+    lang: string = this.defaultLanguage,
+  ): Promise<CardResponseDto> {
+    try {
+      // Валидируем параметр языка
+      this.validateLang(lang);
+
+      // Получаем колоду из базы данных
+      const deck = await this.deckModel
+        .findOne({
+          key: deckId,
+          available: true,
+        })
+        .exec();
+
+      // Если колода не найдена, генерируем ошибку
+      if (!deck) {
+        throw new NotFoundException(
+          `Колода с идентификатором "${deckId}" не найдена`,
+        );
+      }
+
+      // Находим карту в колоде
+      const card = deck.cards.find(card => card.id === cardId);
+
+      // Если карта не найдена, генерируем ошибку
+      if (!card) {
+        throw new NotFoundException(
+          `Карта с идентификатором "${cardId}" не найдена в колоде "${deckId}"`,
+        );
+      }
+
+      // Получаем переводы
+      const deckTranslation = this.getTranslation(deck.translations, lang);
+      const cardTranslation = this.getTranslation(card.translations, lang);
+
+      // Формируем объект ответа
+      return {
+        deck: {
+          id: deck.key,
+          name: deckTranslation.name,
+          description: deckTranslation.description,
+        },
+        card: {
+          id: card.id,
+          name: cardTranslation.name,
+          imageUrl: card.imageUrl,
+          meaning: {
+            upright: cardTranslation.meaning.upright,
+            reversed: cardTranslation.meaning.reversed,
+          },
+        },
+      };
+    } catch (error) {
+      this.logger.error(
+        `Ошибка при получении карты ${cardId} из колоды ${deckId}: ${error.message}`,
       );
       throw error;
     }
