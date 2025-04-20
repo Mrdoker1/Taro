@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Deck, DeckDocument } from './schemas/deck.schema';
@@ -44,6 +49,51 @@ export class DecksService {
       return this.formatDecksResponse(decks, lang, includeAll);
     } catch (error) {
       this.logger.error(`Ошибка при получении колод: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Получить колоду Таро по идентификатору
+   * @param deckId Идентификатор колоды
+   * @param lang Код языка локализации
+   * @param includeAll Включать ли полную информацию о картах
+   * @returns Информация о колоде в соответствии с запрошенным форматом
+   */
+  async getDeckById(
+    deckId: string,
+    lang: string = this.defaultLanguage,
+    includeAll: boolean = false,
+  ): Promise<DeckSummaryDto | DeckDetailDto> {
+    try {
+      // Валидируем параметр языка
+      this.validateLang(lang);
+
+      // Получаем колоду из базы данных
+      const deck = await this.deckModel
+        .findOne({
+          key: deckId,
+          available: true,
+        })
+        .exec();
+
+      // Если колода не найдена, генерируем ошибку
+      if (!deck) {
+        throw new NotFoundException(
+          `Колода с идентификатором "${deckId}" не найдена`,
+        );
+      }
+
+      // Форматируем ответ в соответствии с запросом
+      if (includeAll) {
+        return this.mapToDetailedResponse([deck], lang)[0];
+      } else {
+        return this.mapToSummaryResponse([deck], lang)[0];
+      }
+    } catch (error) {
+      this.logger.error(
+        `Ошибка при получении колоды ${deckId}: ${error.message}`,
+      );
       throw error;
     }
   }
