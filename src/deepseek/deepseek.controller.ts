@@ -7,36 +7,36 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { DeepseekService } from './deepseek.service';
-import { DeepseekRequestDto } from './dto/deepseek-request.dto';
+import { GenerateRequestDto } from './dto/generate-request.dto';
 import {
-  DeepseekResponseDto,
-  ErrorResponseExample,
-} from './dto/deepseek-response.dto';
+  GenerateResponseDto,
+  GenerateErrorResponseDto,
+} from './dto/generate-response.dto';
 
-@ApiTags('astrology')
-@Controller('api/astrology')
-export class DeepseekController {
+@ApiTags('generation')
+@Controller()
+export class GenerationController {
   constructor(private readonly deepseekService: DeepseekService) {}
 
-  @Post('predict')
+  @Post('generate')
   @ApiOperation({
-    summary: 'Получить астрологический прогноз или толкование карт таро',
+    summary:
+      'Гибкий генератор текста на основе переданного промпта и параметров',
   })
   @ApiResponse({
     status: 200,
-    description: 'Успешный прогноз или толкование',
-    type: DeepseekResponseDto,
+    description: 'Успешная генерация',
+    type: GenerateResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description:
-      'Неверный формат запроса или тема не соответствует астрологии/таро',
-    type: ErrorResponseExample,
+    description: 'Неверный формат запроса',
+    type: GenerateErrorResponseDto,
   })
   @ApiResponse({ status: 500, description: 'Ошибка сервера или DeepSeek API' })
-  async getAstrologyPrediction(@Body() requestDto: DeepseekRequestDto) {
+  async generateContent(@Body() requestDto: GenerateRequestDto) {
     try {
-      return await this.deepseekService.processPrompt(requestDto);
+      return await this.deepseekService.generate(requestDto);
     } catch (error) {
       // Преобразуем ошибки DeepSeek API в понятные HTTP-ошибки
       if (error.status === 401) {
