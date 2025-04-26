@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   Logger,
+  NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -51,6 +52,49 @@ export class SpreadsService {
   }
 
   /**
+   * Получить расклад по идентификатору
+   * @param spreadId Идентификатор расклада
+   * @param lang Код языка локализации
+   * @param includeAll Включать ли подробную информацию
+   * @returns Информация о раскладе в соответствии с запрошенным форматом
+   */
+  async getSpreadById(
+    spreadId: string,
+    lang: string = this.defaultLanguage,
+    includeAll: boolean = false,
+  ): Promise<SpreadSummaryDto | SpreadDetailDto> {
+    try {
+      // Валидируем параметр языка
+      this.validateLang(lang);
+
+      // Получаем расклад из базы данных
+      const spread = await this.spreadModel
+        .findOne({
+          key: spreadId,
+          available: true,
+        })
+        .exec();
+
+      // Если расклад не найден, генерируем ошибку
+      if (!spread) {
+        throw new NotFoundException('Spread not found');
+      }
+
+      // Форматируем ответ в соответствии с запросом
+      if (includeAll) {
+        return this.mapToDetailedResponse([spread], lang)[0];
+      } else {
+        return this.mapToSummaryResponse([spread], lang)[0];
+      }
+    } catch (error) {
+      this.logger.error(
+        `Ошибка при получении расклада ${spreadId}: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
    * Проверяет корректность параметра языка
    */
   private validateLang(lang: string): void {
@@ -93,7 +137,7 @@ export class SpreadsService {
   ): SpreadDetailDto[] {
     return spreads.map(spread => {
       const translation = this.getTranslation(spread.translations, lang);
-      
+
       // Преобразуем meta объекты
       const metaObj: Record<string, { label: string }> = {};
       for (const [key, meta] of Object.entries(spread.meta)) {
@@ -108,7 +152,8 @@ export class SpreadsService {
         description: translation.description,
         available: spread.available,
         paid: spread.paid,
-        questions: spread.questions[lang] || spread.questions[this.defaultLanguage],
+        questions:
+          spread.questions[lang] || spread.questions[this.defaultLanguage],
         cardsCount: spread.cardsCount,
         grid: spread.grid,
         meta: metaObj,
@@ -125,7 +170,7 @@ export class SpreadsService {
   ): SpreadSummaryDto[] {
     return spreads.map(spread => {
       const translation = this.getTranslation(spread.translations, lang);
-      
+
       return {
         id: spread.key,
         name: translation.name,
@@ -139,10 +184,7 @@ export class SpreadsService {
   /**
    * Получает перевод для указанного языка или возвращает перевод для языка по умолчанию
    */
-  private getTranslation(
-    translations: Record<string, any>,
-    lang: string,
-  ): any {
+  private getTranslation(translations: Record<string, any>, lang: string): any {
     return translations[lang] || translations[this.defaultLanguage];
   }
 }

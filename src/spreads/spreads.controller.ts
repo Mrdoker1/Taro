@@ -6,10 +6,18 @@ import {
   HttpStatus,
   HttpException,
   Logger,
+  Param,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiOperation,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+  ApiParam,
+} from '@nestjs/swagger';
 import { SpreadsService } from './spreads.service';
-import { SpreadSummaryDto } from './dto/spread-response.dto';
+import { SpreadSummaryDto, SpreadDetailDto } from './dto/spread-response.dto';
 import { Request, Response } from 'express';
 
 @ApiTags('Spreads')
@@ -65,6 +73,70 @@ export class SpreadsController {
     }
   }
 
+  @Get(':spreadId')
+  @ApiOperation({ summary: 'Получить детали одного расклада Таро' })
+  @ApiParam({
+    name: 'spreadId',
+    required: true,
+    description: 'Идентификатор расклада',
+    type: String,
+    example: 'one-card',
+  })
+  @ApiQuery({
+    name: 'lang',
+    required: false,
+    description: 'Код языка локализации (например, ru, en)',
+    type: String,
+    example: 'ru',
+  })
+  @ApiQuery({
+    name: 'includeAll',
+    required: false,
+    description: 'Если true, в ответе вернётся полная информация о раскладе',
+    type: Boolean,
+    example: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Детали расклада успешно получены',
+    type: SpreadDetailDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Некорректные параметры запроса',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Расклад с указанным идентификатором не найден',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Внутренняя ошибка сервера',
+  })
+  async getSpreadById(
+    @Param('spreadId') spreadId: string,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    try {
+      // Извлекаем и обрабатываем параметры запроса
+      const { lang, includeAll } = this.extractQueryParams(req);
+
+      // Получаем данные от сервиса
+      const spread = await this.spreadsService.getSpreadById(
+        spreadId,
+        lang,
+        includeAll,
+      );
+
+      // Возвращаем успешный ответ
+      return res.status(HttpStatus.OK).json(spread);
+    } catch (error) {
+      // Обрабатываем ошибки
+      return this.handleError(error, res);
+    }
+  }
+
   /**
    * Извлекает и преобразует параметры запроса
    */
@@ -95,16 +167,23 @@ export class SpreadsController {
   private handleError(error: any, res: Response) {
     this.logger.error(`Ошибка при обработке запроса: ${error.message}`);
 
+    if (error instanceof NotFoundException) {
+      return res.status(HttpStatus.NOT_FOUND).json({
+        error: true,
+        message: 'Spread not found',
+      });
+    }
+
     if (error instanceof HttpException) {
       return res.status(error.getStatus()).json({
-        statusCode: error.getStatus(),
+        error: true,
         message: error.message,
       });
     }
 
     return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: 'Ошибка при получении раскладов',
+      error: true,
+      message: 'Internal server error',
     });
   }
 }
