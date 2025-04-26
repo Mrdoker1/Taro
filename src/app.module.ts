@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { DeepseekModule } from './deepseek/deepseek.module';
 import { DecksModule } from './decks/decks.module';
 import { SpreadsModule } from './spreads/spreads.module';
+import { PromptTemplatesModule } from './prompt-templates/prompt-templates.module';
 
 @Module({
   controllers: [HealthController],
@@ -18,6 +19,7 @@ import { SpreadsModule } from './spreads/spreads.module';
     DeepseekModule,
     DecksModule,
     SpreadsModule,
+    PromptTemplatesModule,
   ],
   providers: [HealthService],
 })
