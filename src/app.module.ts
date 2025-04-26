@@ -7,6 +7,7 @@ import { HealthService } from './status/health.service';
 import { ConfigModule } from '@nestjs/config';
 import { DeepseekModule } from './deepseek/deepseek.module';
 import { DecksModule } from './decks/decks.module';
+import { SpreadsModule } from './spreads/spreads.module';
 
 @Module({
   controllers: [HealthController],
@@ -16,6 +17,7 @@ import { DecksModule } from './decks/decks.module';
     AuthModule,
     DeepseekModule,
     DecksModule,
+    SpreadsModule,
   ],
   providers: [HealthService],
 })
