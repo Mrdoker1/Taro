@@ -13,7 +13,7 @@ import {
   GenerateErrorResponseDto,
 } from './dto/generate-response.dto';
 
-@ApiTags('generation')
+@ApiTags('LM Generation')
 @Controller()
 export class GenerationController {
   constructor(private readonly deepseekService: DeepseekService) {}
