@@ -96,8 +96,8 @@ export class PromptTemplatesSeed {
             "date":        "<YYYY-MM-DD>",
             "prediction":  "<краткий прогноз на день>",
             "mood":        "<эмодзи>",
-            "color":       "<hex-код цвета, напр. #FF0000>",
-            "luckyNumber": <целое число>
+            "color":       "<случайный hex-код цвета, напр. #FF0000>",
+            "number":      "<любое целое число от 1 до 100>"
           }
 
           Заполни поля, используя metadata (zodiacSign, horoscopeDate). Используй ТОЧНО ту дату, которая указана в horoscopeDate. Никаких лишних полей.`,
@@ -117,8 +117,8 @@ export class PromptTemplatesSeed {
             "week":        "<YYYY-Www>",
             "prediction":  "<краткий прогноз на неделю>",
             "mood":        "<эмодзи>",
-            "color":       "<hex-код цвета, напр. #FF0000>",
-            "luckyNumber": <целое число>
+            "color":       "<случайный hex-код цвета, напр. #FF0000>",
+            "number":      "<любое целое число от 1 до 100>"
           }
 
           Заполни поля, используя metadata (zodiacSign, horoscopeWeek). Используй ТОЧНО ту неделю, которая указана в horoscopeWeek. Никаких лишних полей.`,
@@ -138,8 +138,8 @@ export class PromptTemplatesSeed {
             "month":       "<YYYY-MM>",
             "prediction":  "<краткий прогноз на месяц>",
             "mood":        "<эмодзи>",
-            "color":       "<hex-код цвета, напр. #FF0000>",
-            "luckyNumber": <целое число>
+            "color":       "<случайный hex-код цвета, напр. #FF0000>",
+            "number":      "<любое целое число от 1 до 100>"
           }
 
           Заполни поля, используя metadata (zodiacSign, horoscopeMonth). Используй ТОЧНО тот месяц, который указан в horoscopeMonth. Никаких лишних полей.`,

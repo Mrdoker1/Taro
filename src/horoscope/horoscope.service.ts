@@ -71,7 +71,7 @@ export class HoroscopeService {
         prediction: existingHoroscope.prediction,
         mood: existingHoroscope.mood,
         color: existingHoroscope.color,
-        luckyNumber: existingHoroscope.luckyNumber,
+        number: existingHoroscope.number,
       };
     }
 
@@ -112,7 +112,7 @@ export class HoroscopeService {
         prediction: savedHoroscope.prediction,
         mood: savedHoroscope.mood,
         color: savedHoroscope.color,
-        luckyNumber: savedHoroscope.luckyNumber,
+        number: savedHoroscope.number,
       };
     } catch (error) {
       if (error.status === 429) {
@@ -154,7 +154,7 @@ export class HoroscopeService {
         prediction: existingHoroscope.prediction,
         mood: existingHoroscope.mood,
         color: existingHoroscope.color,
-        luckyNumber: existingHoroscope.luckyNumber,
+        number: existingHoroscope.number,
       };
     }
 
@@ -195,7 +195,7 @@ export class HoroscopeService {
         prediction: savedHoroscope.prediction,
         mood: savedHoroscope.mood,
         color: savedHoroscope.color,
-        luckyNumber: savedHoroscope.luckyNumber,
+        number: savedHoroscope.number,
       };
     } catch (error) {
       if (error.status === 429) {
@@ -237,7 +237,7 @@ export class HoroscopeService {
         prediction: existingHoroscope.prediction,
         mood: existingHoroscope.mood,
         color: existingHoroscope.color,
-        luckyNumber: existingHoroscope.luckyNumber,
+        number: existingHoroscope.number,
       };
     }
 
@@ -278,7 +278,7 @@ export class HoroscopeService {
         prediction: savedHoroscope.prediction,
         mood: savedHoroscope.mood,
         color: savedHoroscope.color,
-        luckyNumber: savedHoroscope.luckyNumber,
+        number: savedHoroscope.number,
       };
     } catch (error) {
       if (error.status === 429) {

@@ -54,5 +54,5 @@ export class WeeklyHoroscopeResponseDto {
   color: string;
 
   @ApiProperty({ example: 7 })
-  luckyNumber: number;
+  number: number;
 }

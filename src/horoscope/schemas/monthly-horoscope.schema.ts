@@ -56,6 +56,6 @@ export class MonthlyHoroscopeResponseDto {
   @ApiProperty({ example: '#FF0000' })
   color: string;
 
-  @ApiProperty({ example: 12 })
-  luckyNumber: number;
+  @ApiProperty({ example: 7 })
+  number: number;
 }

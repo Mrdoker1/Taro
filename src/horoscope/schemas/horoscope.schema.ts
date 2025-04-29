@@ -25,7 +25,7 @@ export class Horoscope extends Document {
   color: string;
 
   @Prop({ required: true })
-  luckyNumber: number;
+  number: number;
 
   @Prop({ required: true, default: 'russian' })
   lang: string;
