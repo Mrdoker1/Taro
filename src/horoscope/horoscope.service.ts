@@ -8,6 +8,8 @@ import { Horoscope } from './schemas/horoscope.schema';
 import * as dayjs from 'dayjs';
 import * as timezone from 'dayjs/plugin/timezone';
 import * as utc from 'dayjs/plugin/utc';
+import { WeeklyHoroscopeResponseDto } from './schemas/weekly-horoscope.schema';
+import { MonthlyHoroscopeResponseDto } from './schemas/monthly-horoscope.schema';
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
@@ -34,9 +36,18 @@ export class HoroscopeService {
     return day;
   }
 
+  private getCurrentWeek(): string {
+    return dayjs().tz().format('YYYY-[W]WW');
+  }
+
+  private getCurrentMonth(): string {
+    return dayjs().tz().format('YYYY-MM');
+  }
+
   async getDailyHoroscope(
     sign: string,
     day: string = 'TODAY',
+    lang: string = 'russian',
   ): Promise<DailyHoroscopeResponseDto> {
     const normalizedDate = this.normalizeDate(day);
 
@@ -44,10 +55,24 @@ export class HoroscopeService {
     const existingHoroscope = await this.horoscopeModel.findOne({
       sign,
       date: normalizedDate,
+      lang,
     });
 
     if (existingHoroscope) {
-      return existingHoroscope;
+      if (!existingHoroscope.date) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: existingHoroscope.sign,
+        date: existingHoroscope.date,
+        prediction: existingHoroscope.prediction,
+        mood: existingHoroscope.mood,
+        color: existingHoroscope.color,
+        luckyNumber: existingHoroscope.luckyNumber,
+      };
     }
 
     try {
@@ -61,7 +86,7 @@ export class HoroscopeService {
         systemPrompt: promptTemplate.systemPromt,
         zodiacSign: sign,
         horoscopeDate: normalizedDate,
-        responseLang: 'russian',
+        responseLang: lang,
         temperature: promptTemplate.temperature,
         maxTokens: promptTemplate.maxTokens,
       });
@@ -69,11 +94,192 @@ export class HoroscopeService {
       // Сохранение в базу данных
       const savedHoroscope = await this.horoscopeModel.create({
         ...horoscope,
+        date: normalizedDate,
+        lang,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
 
-      return savedHoroscope;
+      if (!savedHoroscope.date) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: savedHoroscope.sign,
+        date: savedHoroscope.date,
+        prediction: savedHoroscope.prediction,
+        mood: savedHoroscope.mood,
+        color: savedHoroscope.color,
+        luckyNumber: savedHoroscope.luckyNumber,
+      };
+    } catch (error) {
+      if (error.status === 429) {
+        throw new HttpException(
+          'Temporarily unable to generate new horoscopes',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw new HttpException(
+        'Unexpected server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getWeeklyHoroscope(
+    sign: string,
+    lang: string = 'russian',
+  ): Promise<WeeklyHoroscopeResponseDto> {
+    const currentWeek = this.getCurrentWeek();
+
+    // Поиск в базе данных
+    const existingHoroscope = await this.horoscopeModel.findOne({
+      sign,
+      week: currentWeek,
+      lang,
+    });
+
+    if (existingHoroscope) {
+      if (!existingHoroscope.week) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: existingHoroscope.sign,
+        week: existingHoroscope.week,
+        prediction: existingHoroscope.prediction,
+        mood: existingHoroscope.mood,
+        color: existingHoroscope.color,
+        luckyNumber: existingHoroscope.luckyNumber,
+      };
+    }
+
+    try {
+      // Получение шаблона промпта
+      const promptTemplate =
+        await this.promptTemplatesService.getTemplateById('weekly-horoscope');
+
+      // Генерация гороскопа через LLM
+      const horoscope = await this.deepseekService.generate({
+        prompt: promptTemplate.systemPromt,
+        systemPrompt: promptTemplate.systemPromt,
+        zodiacSign: sign,
+        horoscopeWeek: currentWeek,
+        responseLang: lang,
+        temperature: promptTemplate.temperature,
+        maxTokens: promptTemplate.maxTokens,
+      });
+
+      // Сохранение в базу данных
+      const savedHoroscope = await this.horoscopeModel.create({
+        ...horoscope,
+        week: currentWeek,
+        lang,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      if (!savedHoroscope.week) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: savedHoroscope.sign,
+        week: savedHoroscope.week,
+        prediction: savedHoroscope.prediction,
+        mood: savedHoroscope.mood,
+        color: savedHoroscope.color,
+        luckyNumber: savedHoroscope.luckyNumber,
+      };
+    } catch (error) {
+      if (error.status === 429) {
+        throw new HttpException(
+          'Temporarily unable to generate new horoscopes',
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw new HttpException(
+        'Unexpected server error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  async getMonthlyHoroscope(
+    sign: string,
+    lang: string = 'russian',
+  ): Promise<MonthlyHoroscopeResponseDto> {
+    const currentMonth = this.getCurrentMonth();
+
+    // Поиск в базе данных
+    const existingHoroscope = await this.horoscopeModel.findOne({
+      sign,
+      month: currentMonth,
+      lang,
+    });
+
+    if (existingHoroscope) {
+      if (!existingHoroscope.month) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: existingHoroscope.sign,
+        month: existingHoroscope.month,
+        prediction: existingHoroscope.prediction,
+        mood: existingHoroscope.mood,
+        color: existingHoroscope.color,
+        luckyNumber: existingHoroscope.luckyNumber,
+      };
+    }
+
+    try {
+      // Получение шаблона промпта
+      const promptTemplate =
+        await this.promptTemplatesService.getTemplateById('monthly-horoscope');
+
+      // Генерация гороскопа через LLM
+      const horoscope = await this.deepseekService.generate({
+        prompt: promptTemplate.systemPromt,
+        systemPrompt: promptTemplate.systemPromt,
+        zodiacSign: sign,
+        horoscopeMonth: currentMonth,
+        responseLang: lang,
+        temperature: promptTemplate.temperature,
+        maxTokens: promptTemplate.maxTokens,
+      });
+
+      // Сохранение в базу данных
+      const savedHoroscope = await this.horoscopeModel.create({
+        ...horoscope,
+        month: currentMonth,
+        lang,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      });
+
+      if (!savedHoroscope.month) {
+        throw new HttpException(
+          'Unexpected server error',
+          HttpStatus.INTERNAL_SERVER_ERROR,
+        );
+      }
+      return {
+        sign: savedHoroscope.sign,
+        month: savedHoroscope.month,
+        prediction: savedHoroscope.prediction,
+        mood: savedHoroscope.mood,
+        color: savedHoroscope.color,
+        luckyNumber: savedHoroscope.luckyNumber,
+      };
     } catch (error) {
       if (error.status === 429) {
         throw new HttpException(

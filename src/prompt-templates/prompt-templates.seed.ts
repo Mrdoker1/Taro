@@ -103,6 +103,48 @@ export class PromptTemplatesSeed {
           Заполни поля, используя metadata (zodiacSign, horoscopeDate). Используй ТОЧНО ту дату, которая указана в horoscopeDate. Никаких лишних полей.`,
         prompt: `Сгенерируй дневной гороскоп, опираясь на переданные метаданные.`,
       },
+
+      /* ── 5. Недельный гороскоп ── */
+      {
+        key: 'weekly-horoscope',
+        temperature: 0.7,
+        maxTokens: 450,
+        responseLang: 'russian',
+        systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
+          ФОРМАТ ОТВЕТА (JSON, без markdown):
+          {
+            "sign":        "<знак>",
+            "week":        "<YYYY-Www>",
+            "prediction":  "<краткий прогноз на неделю>",
+            "mood":        "<эмодзи>",
+            "color":       "<hex-код цвета, напр. #FF0000>",
+            "luckyNumber": <целое число>
+          }
+
+          Заполни поля, используя metadata (zodiacSign, horoscopeWeek). Используй ТОЧНО ту неделю, которая указана в horoscopeWeek. Никаких лишних полей.`,
+        prompt: `Сгенерируй недельный гороскоп, опираясь на переданные метаданные.`,
+      },
+
+      /* ── 6. Месячный гороскоп ── */
+      {
+        key: 'monthly-horoscope',
+        temperature: 0.7,
+        maxTokens: 500,
+        responseLang: 'russian',
+        systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
+          ФОРМАТ ОТВЕТА (JSON, без markdown):
+          {
+            "sign":        "<знак>",
+            "month":       "<YYYY-MM>",
+            "prediction":  "<краткий прогноз на месяц>",
+            "mood":        "<эмодзи>",
+            "color":       "<hex-код цвета, напр. #FF0000>",
+            "luckyNumber": <целое число>
+          }
+
+          Заполни поля, используя metadata (zodiacSign, horoscopeMonth). Используй ТОЧНО тот месяц, который указан в horoscopeMonth. Никаких лишних полей.`,
+        prompt: `Сгенерируй месячный гороскоп, опираясь на переданные метаданные.`,
+      },
     ];
   }
 }

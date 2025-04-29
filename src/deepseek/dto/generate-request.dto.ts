@@ -75,6 +75,22 @@ export class GenerateRequestDto {
   horoscopeDate?: string;
 
   @ApiProperty({
+    description: 'Неделя гороскопа',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  horoscopeWeek?: string;
+
+  @ApiProperty({
+    description: 'Месяц гороскопа',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  horoscopeMonth?: string;
+
+  @ApiProperty({
     description: 'Температура генерации (влияет на креативность ответов)',
     example: RequestExample.temperature,
     default: 0.7,

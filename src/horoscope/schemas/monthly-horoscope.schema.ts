@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsOptional, IsIn } from 'class-validator';
+import { IsString, IsIn, IsOptional } from 'class-validator';
 
 const ZODIAC_SIGNS = [
   'Aries',
@@ -16,7 +16,7 @@ const ZODIAC_SIGNS = [
   'Pisces',
 ] as const;
 
-export class DailyHoroscopeQueryDto {
+export class MonthlyHoroscopeQueryDto {
   @ApiProperty({
     description: 'Знак зодиака',
     enum: ZODIAC_SIGNS,
@@ -25,15 +25,6 @@ export class DailyHoroscopeQueryDto {
   @IsString()
   @IsIn(ZODIAC_SIGNS)
   sign: string;
-
-  @ApiProperty({
-    description: 'День гороскопа (TODAY, TOMORROW, YESTERDAY или YYYY-MM-DD)',
-    example: 'TODAY',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  day?: string;
 
   @ApiProperty({
     description: 'Язык ответа (russian/english)',
@@ -46,22 +37,25 @@ export class DailyHoroscopeQueryDto {
   lang?: string;
 }
 
-export class DailyHoroscopeResponseDto {
+export class MonthlyHoroscopeResponseDto {
   @ApiProperty({ example: 'Aries' })
   sign: string;
 
-  @ApiProperty({ example: '2025-04-28', required: false })
-  date?: string;
+  @ApiProperty({ example: '2025-05' })
+  month: string;
 
-  @ApiProperty({ example: 'Сегодня вас ждут новые возможности на работе...' })
+  @ApiProperty({
+    example:
+      'Май принесёт вам новые возможности для карьерного роста и укрепит личные связи.',
+  })
   prediction: string;
 
-  @ApiProperty({ example: '😃' })
+  @ApiProperty({ example: '🙂' })
   mood: string;
 
   @ApiProperty({ example: '#FF0000' })
   color: string;
 
-  @ApiProperty({ example: 7 })
+  @ApiProperty({ example: 12 })
   luckyNumber: number;
 }

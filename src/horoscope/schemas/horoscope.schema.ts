@@ -6,8 +6,14 @@ export class Horoscope extends Document {
   @Prop({ required: true })
   sign: string;
 
-  @Prop({ required: true })
-  date: string;
+  @Prop({ required: false })
+  date?: string;
+
+  @Prop({ required: false })
+  week?: string;
+
+  @Prop({ required: false })
+  month?: string;
 
   @Prop({ required: true })
   prediction: string;
@@ -20,6 +26,9 @@ export class Horoscope extends Document {
 
   @Prop({ required: true })
   luckyNumber: number;
+
+  @Prop({ required: true, default: 'russian' })
+  lang: string;
 }
 
 export const HoroscopeSchema = SchemaFactory.createForClass(Horoscope);
