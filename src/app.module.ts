@@ -9,6 +9,7 @@ import { DeepseekModule } from './deepseek/deepseek.module';
 import { DecksModule } from './decks/decks.module';
 import { SpreadsModule } from './spreads/spreads.module';
 import { PromptTemplatesModule } from './prompt-templates/prompt-templates.module';
+import { HoroscopeModule } from './horoscope/horoscope.module';
 
 @Module({
   controllers: [HealthController],
@@ -20,6 +21,7 @@ import { PromptTemplatesModule } from './prompt-templates/prompt-templates.modul
     DecksModule,
     SpreadsModule,
     PromptTemplatesModule,
+    HoroscopeModule,
   ],
   providers: [HealthService],
 })

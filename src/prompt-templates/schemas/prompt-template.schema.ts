@@ -15,6 +15,12 @@ export class PromptTemplate {
 
   @Prop({ required: true })
   systemPromt: string;
+
+  @Prop({ required: false })
+  prompt: string;
+
+  @Prop({ required: true, default: 'russian' })
+  responseLang: string;
 }
 
 export type PromptTemplateDocument = PromptTemplate & Document;

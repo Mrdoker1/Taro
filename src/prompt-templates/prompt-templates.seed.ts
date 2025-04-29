@@ -46,8 +46,21 @@ export class PromptTemplatesSeed {
         key: 'one-card',
         temperature: 0.7,
         maxTokens: 800,
-        systemPromt:
-          'Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.\n\nФОРМАТ ОТВЕТА (JSON):\n{\n  "message":  "общее толкование карты",\n  "positions": [ { "index": 1, "interpretation": "…" } ]\n}\n\nЕсли вопрос не относится к таро — верни { "error": true, "message": "Ваш вопрос не относится к таро…" }. Без markdown, ≤ 800 токенов.',
+        responseLang: 'russian',
+        systemPromt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
+          ФОРМАТ ОТВЕТА (JSON):
+          {
+            "message":  "общее толкование карты",
+            "positions": [ { "index": 1, "interpretation": "…" } ]
+          }
+
+          Если вопрос не относится к таро — верни { "error": true, "message": "Ваш вопрос не относится к таро…" }. Без markdown, ≤ 800 токенов.`,
+        prompt: `Вопрос пользователя: Как мне улучшить финансовую ситуацию?
+          Расклад: Одна карта
+          Карты и позиции:
+          1. Карта дня — Major_The_Magician
+
+          Сформируй ответ строго по описанному JSON-формату.`,
       },
 
       /* ── 2. Три карты ── */
@@ -55,6 +68,7 @@ export class PromptTemplatesSeed {
         key: 'three-cards',
         temperature: 0.7,
         maxTokens: 900,
+        responseLang: 'russian',
         systemPromt:
           'Ты — эксперт по раскладу «Прошлое / Настоящее / Будущее». Отвечай ТОЛЬКО на вопросы по таро.\n\nФОРМАТ ОТВЕТА (JSON):\n{\n  "message":  "общее толкование трёх карт",\n  "positions": [ { "index": 1, "interpretation": "…" }, { "index": 2, "interpretation": "…" }, { "index": 3, "interpretation": "…" } ]\n}\n\nЕсли вопрос не по теме — верни объект ошибки. Без markdown, ≤ 900 токенов.',
       },
@@ -64,8 +78,30 @@ export class PromptTemplatesSeed {
         key: 'lo-shu',
         temperature: 0.75,
         maxTokens: 1000,
+        responseLang: 'russian',
         systemPromt:
           'Ты — эксперт по раскладу «Ло Шу» (магический квадрат 3×3). Отвечай ТОЛЬКО на вопросы о таро.\n\nФОРМАТ ОТВЕТА (JSON):\n{\n  "message":  "общее толкование девяти карт",\n  "positions": [ { "index": 1, "interpretation": "…" }, … { "index": 9, "interpretation": "…" } ]\n}\n\nЕсли вопрос не по теме — верни объект ошибки. Без markdown, ≤ 1000 токенов.',
+      },
+
+      /* ── 4. Ежедневный гороскоп ── */
+      {
+        key: 'daily-horoscope',
+        temperature: 0.7,
+        maxTokens: 400,
+        responseLang: 'russian',
+        systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
+          ФОРМАТ ОТВЕТА (JSON, без markdown):
+          {
+            "sign":        "<знак>",
+            "date":        "<YYYY-MM-DD>",
+            "prediction":  "<краткий прогноз на день>",
+            "mood":        "<эмодзи>",
+            "color":       "<hex-код цвета, напр. #FF0000>",
+            "luckyNumber": <целое число>
+          }
+
+          Заполни поля, используя metadata (zodiacSign, horoscopeDate). Используй ТОЧНО ту дату, которая указана в horoscopeDate. Никаких лишних полей.`,
+        prompt: `Сгенерируй дневной гороскоп, опираясь на переданные метаданные.`,
       },
     ];
   }

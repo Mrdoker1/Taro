@@ -36,6 +36,9 @@ export class DeepseekService {
       if (dto.zodiacSign) {
         userPrompt = `Знак зодиака: ${dto.zodiacSign}\n${userPrompt}`;
       }
+      if (dto.horoscopeDate) {
+        userPrompt = `Дата гороскопа: ${dto.horoscopeDate}\n${userPrompt}`;
+      }
 
       // Добавляем информацию о языке ответа, если указан
       if (dto.responseLang && dto.responseLang !== 'ru') {

@@ -67,6 +67,14 @@ export class GenerateRequestDto {
   zodiacSign?: string;
 
   @ApiProperty({
+    description: 'Дата гороскопа',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  horoscopeDate?: string;
+
+  @ApiProperty({
     description: 'Температура генерации (влияет на креативность ответов)',
     example: RequestExample.temperature,
     default: 0.7,
