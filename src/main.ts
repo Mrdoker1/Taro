@@ -33,8 +33,15 @@ async function bootstrap() {
 }
 
 function configureCors(app) {
+  // Получаем список разрешенных источников из переменной окружения или используем значения по умолчанию
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : ['http://localhost:5173', 'https://mrdoker1.github.io/Taro-vk'];
+
+  console.log('CORS allowed origins:', allowedOrigins);
+
   app.enableCors({
-    origin: `http://${process.env.CLIENT}`, // Разрешаем запросы с фронтенда
+    origin: allowedOrigins,
     credentials: true, // Позволяет передавать cookies и заголовки Authorization
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Разрешенные методы
     allowedHeaders: ['Content-Type', 'Authorization'], // Разрешенные заголовки
