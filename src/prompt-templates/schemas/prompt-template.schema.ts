@@ -14,7 +14,7 @@ export class PromptTemplate {
   maxTokens: number;
 
   @Prop({ required: true })
-  systemPromt: string;
+  systemPrompt: string;
 
   @Prop({ required: false })
   prompt: string;

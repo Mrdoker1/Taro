@@ -24,5 +24,5 @@ export class PromptTemplateResponseDto {
     example:
       'Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро...',
   })
-  systemPromt: string;
+  systemPrompt: string;
 }

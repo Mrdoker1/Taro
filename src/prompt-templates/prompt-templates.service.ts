@@ -56,7 +56,7 @@ export class PromptTemplatesService {
       key: template.key,
       temperature: template.temperature,
       maxTokens: template.maxTokens,
-      systemPromt: template.systemPromt,
+      systemPrompt: template.systemPrompt,
     };
   }
 }

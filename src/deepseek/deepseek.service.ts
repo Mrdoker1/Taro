@@ -29,7 +29,8 @@ export class DeepseekService {
       }
 
       // Используем системный промт из запроса, учитывая альтернативное написание
-      const systemPrompt = dto.systemPrompt || dto.systemPromt || SYSTEM_PROMPT;
+      const systemPrompt =
+        dto.systemPrompt || dto.systemPrompt || SYSTEM_PROMPT;
 
       // Формируем запрос пользователя, добавляя знак зодиака, если он указан
       let userPrompt = dto.prompt;

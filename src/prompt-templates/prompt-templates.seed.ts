@@ -47,7 +47,7 @@ export class PromptTemplatesSeed {
         temperature: 0.7,
         maxTokens: 800,
         responseLang: 'russian',
-        systemPromt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
+        systemPrompt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
           ФОРМАТ ОТВЕТА (JSON):
           {
             "message":  "общее толкование карты",
@@ -69,7 +69,7 @@ export class PromptTemplatesSeed {
         temperature: 0.7,
         maxTokens: 900,
         responseLang: 'russian',
-        systemPromt:
+        systemPrompt:
           'Ты — эксперт по раскладу «Прошлое / Настоящее / Будущее». Отвечай ТОЛЬКО на вопросы по таро.\n\nФОРМАТ ОТВЕТА (JSON):\n{\n  "message":  "общее толкование трёх карт",\n  "positions": [ { "index": 1, "interpretation": "…" }, { "index": 2, "interpretation": "…" }, { "index": 3, "interpretation": "…" } ]\n}\n\nЕсли вопрос не по теме — верни объект ошибки. Без markdown, ≤ 900 токенов.',
       },
 
@@ -79,7 +79,7 @@ export class PromptTemplatesSeed {
         temperature: 0.75,
         maxTokens: 1000,
         responseLang: 'russian',
-        systemPromt:
+        systemPrompt:
           'Ты — эксперт по раскладу «Ло Шу» (магический квадрат 3×3). Отвечай ТОЛЬКО на вопросы о таро.\n\nФОРМАТ ОТВЕТА (JSON):\n{\n  "message":  "общее толкование девяти карт",\n  "positions": [ { "index": 1, "interpretation": "…" }, … { "index": 9, "interpretation": "…" } ]\n}\n\nЕсли вопрос не по теме — верни объект ошибки. Без markdown, ≤ 1000 токенов.',
       },
 
@@ -89,7 +89,7 @@ export class PromptTemplatesSeed {
         temperature: 0.8,
         maxTokens: 400,
         responseLang: 'russian',
-        systemPromt: `Ты — профессиональный астролог. Генерируй УНИКАЛЬНЫЙ гороскоп для каждой комбинации дата-знак.
+        systemPrompt: `Ты — профессиональный астролог. Генерируй УНИКАЛЬНЫЙ гороскоп для каждой комбинации дата-знак.
           ФОРМАТ ОТВЕТА (JSON):
           {
             "sign": "<Aries-Taurus-Gemini-Cancer-Leo-Virgo-Libra-Scorpio-Sagittarius-Capricorn-Aquarius-Pisces>",
@@ -133,7 +133,7 @@ export class PromptTemplatesSeed {
         temperature: 0.8,
         maxTokens: 450,
         responseLang: 'russian',
-        systemPromt: `Ты — астролог. Создай УНИКАЛЬНЫЙ недельный гороскоп.
+        systemPrompt: `Ты — астролог. Создай УНИКАЛЬНЫЙ недельный гороскоп.
           ФОРМАТ ОТВЕТА (JSON):
           {
             "sign": "<Aries-Taurus-Gemini-Cancer-Leo-Virgo-Libra-Scorpio-Sagittarius-Capricorn-Aquarius-Pisces>",
@@ -168,7 +168,7 @@ export class PromptTemplatesSeed {
         temperature: 0.8,
         maxTokens: 500,
         responseLang: 'russian',
-        systemPromt: `Ты — астролог. Месячный гороскоп должен быть АБСОЛЮТНО УНИКАЛЬНЫМ.
+        systemPrompt: `Ты — астролог. Месячный гороскоп должен быть АБСОЛЮТНО УНИКАЛЬНЫМ.
           ФОРМАТ ОТВЕТА (JSON):
           {
             "sign": "<Aries-Taurus-Gemini-Cancer-Leo-Virgo-Libra-Scorpio-Sagittarius-Capricorn-Aquarius-Pisces>",

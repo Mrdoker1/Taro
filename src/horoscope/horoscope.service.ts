@@ -82,8 +82,8 @@ export class HoroscopeService {
 
       // Генерация гороскопа через LLM
       const horoscope = await this.deepseekService.generate({
-        prompt: promptTemplate.systemPromt,
-        systemPrompt: promptTemplate.systemPromt,
+        prompt: promptTemplate.systemPrompt,
+        systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,
         horoscopeDate: normalizedDate,
         responseLang: lang,
@@ -165,8 +165,8 @@ export class HoroscopeService {
 
       // Генерация гороскопа через LLM
       const horoscope = await this.deepseekService.generate({
-        prompt: promptTemplate.systemPromt,
-        systemPrompt: promptTemplate.systemPromt,
+        prompt: promptTemplate.systemPrompt,
+        systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,
         horoscopeWeek: currentWeek,
         responseLang: lang,
@@ -248,8 +248,8 @@ export class HoroscopeService {
 
       // Генерация гороскопа через LLM
       const horoscope = await this.deepseekService.generate({
-        prompt: promptTemplate.systemPromt,
-        systemPrompt: promptTemplate.systemPromt,
+        prompt: promptTemplate.systemPrompt,
+        systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,
         horoscopeMonth: currentMonth,
         responseLang: lang,

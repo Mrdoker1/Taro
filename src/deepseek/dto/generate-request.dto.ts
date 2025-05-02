@@ -17,7 +17,7 @@ export const RequestExample = {
   maxTokens: 800,
   responseLang: 'ru',
 
-  systemPromt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
+  systemPrompt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
 
 ФОРМАТ ОТВЕТА (JSON):
 {
@@ -128,19 +128,10 @@ export class GenerateRequestDto {
 
   @ApiProperty({
     description: 'Системный промт для модели (инструкции для генерации)',
-    example: RequestExample.systemPromt,
+    example: RequestExample.systemPrompt,
     required: false,
   })
   @IsString()
   @IsOptional()
   systemPrompt?: string;
-
-  @ApiProperty({
-    description:
-      'Альтернативное написание системного промта (для обратной совместимости)',
-    required: false,
-  })
-  @IsString()
-  @IsOptional()
-  systemPromt?: string;
 }
