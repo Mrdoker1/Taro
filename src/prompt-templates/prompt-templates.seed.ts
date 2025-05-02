@@ -92,7 +92,7 @@ export class PromptTemplatesSeed {
         systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
           ФОРМАТ ОТВЕТА (JSON, без markdown):
           {
-            "sign":        "<знак>",
+            "sign":        "<знак на английском, независимо от языка ответа: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces>",
             "date":        "<YYYY-MM-DD>",
             "prediction":  "<краткий прогноз на день>",
             "mood":        "<эмодзи>",
@@ -100,7 +100,7 @@ export class PromptTemplatesSeed {
             "number":      "<любое целое число от 1 до 100>"
           }
 
-          Заполни поля, используя metadata (zodiacSign, horoscopeDate). Используй ТОЧНО ту дату, которая указана в horoscopeDate. Никаких лишних полей.`,
+          Заполни поля, используя metadata (zodiacSign, horoscopeDate). Используй ТОЧНО ту дату, которая указана в horoscopeDate. Никаких лишних полей. ВАЖНО: поле "sign" должно всегда содержать название знака на английском языке (Aries, Taurus и т.д.), независимо от языка прогноза.`,
         prompt: `Сгенерируй дневной гороскоп, опираясь на переданные метаданные.`,
       },
 
@@ -113,7 +113,7 @@ export class PromptTemplatesSeed {
         systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
           ФОРМАТ ОТВЕТА (JSON, без markdown):
           {
-            "sign":        "<знак>",
+            "sign":        "<знак на английском, независимо от языка ответа: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces>",
             "week":        "<YYYY-Www>",
             "prediction":  "<краткий прогноз на неделю>",
             "mood":        "<эмодзи>",
@@ -121,7 +121,7 @@ export class PromptTemplatesSeed {
             "number":      "<любое целое число от 1 до 100>"
           }
 
-          Заполни поля, используя metadata (zodiacSign, horoscopeWeek). Используй ТОЧНО ту неделю, которая указана в horoscopeWeek. Никаких лишних полей.`,
+          Заполни поля, используя metadata (zodiacSign, horoscopeWeek). Используй ТОЧНО ту неделю, которая указана в horoscopeWeek. Никаких лишних полей. ВАЖНО: поле "sign" должно всегда содержать название знака на английском языке (Aries, Taurus и т.д.), независимо от языка прогноза.`,
         prompt: `Сгенерируй недельный гороскоп, опираясь на переданные метаданные.`,
       },
 
@@ -134,7 +134,7 @@ export class PromptTemplatesSeed {
         systemPromt: `Ты — профессиональный астролог. Отвечай ТОЛЬКО про знаки зодиака и гороскопы.
           ФОРМАТ ОТВЕТА (JSON, без markdown):
           {
-            "sign":        "<знак>",
+            "sign":        "<знак на английском, независимо от языка ответа: Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces>",
             "month":       "<YYYY-MM>",
             "prediction":  "<краткий прогноз на месяц>",
             "mood":        "<эмодзи>",
@@ -142,7 +142,7 @@ export class PromptTemplatesSeed {
             "number":      "<любое целое число от 1 до 100>"
           }
 
-          Заполни поля, используя metadata (zodiacSign, horoscopeMonth). Используй ТОЧНО тот месяц, который указан в horoscopeMonth. Никаких лишних полей.`,
+          Заполни поля, используя metadata (zodiacSign, horoscopeMonth). Используй ТОЧНО тот месяц, который указан в horoscopeMonth. Никаких лишних полей. ВАЖНО: поле "sign" должно всегда содержать название знака на английском языке (Aries, Taurus и т.д.), независимо от языка прогноза.`,
         prompt: `Сгенерируй месячный гороскоп, опираясь на переданные метаданные.`,
       },
     ];
