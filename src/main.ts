@@ -36,7 +36,7 @@ function configureCors(app) {
   // Получаем список разрешенных источников из переменной окружения или используем значения по умолчанию
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:5173', 'https://mrdoker1.github.io/Taro-vk'];
+    : ['http://localhost:5173', 'https://mrdoker1.github.io'];
 
   console.log('CORS allowed origins:', allowedOrigins);
 
