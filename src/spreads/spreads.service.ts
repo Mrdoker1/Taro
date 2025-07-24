@@ -152,6 +152,7 @@ export class SpreadsService {
         description: translation.description,
         available: spread.available,
         paid: spread.paid,
+        imageURL: spread.imageURL,
         questions:
           spread.questions[lang] || spread.questions[this.defaultLanguage],
         cardsCount: spread.cardsCount,
@@ -177,6 +178,7 @@ export class SpreadsService {
         description: translation.description,
         available: spread.available,
         paid: spread.paid,
+        imageURL: spread.imageURL,
       };
     });
   }

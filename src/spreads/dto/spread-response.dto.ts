@@ -22,6 +22,12 @@ export class SpreadSummaryDto {
 
   @ApiProperty({ description: 'Является ли расклад платным' })
   paid: boolean;
+
+  @ApiProperty({
+    description: 'URL изображения расклада',
+    required: false,
+  })
+  imageURL?: string;
 }
 
 // Детальная информация о раскладе (полная)

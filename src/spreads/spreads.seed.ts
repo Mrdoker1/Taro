@@ -66,6 +66,7 @@ export class SpreadsSeed {
         meta: {
           1: { label: { ru: 'Карта дня', en: 'Daily card' } },
         },
+        imageURL: 'https://i.ibb.co/sJNzV60L/Image.png',
       },
 
       /* ─────────── 2. Три карты ─────────── */
@@ -99,6 +100,7 @@ export class SpreadsSeed {
           2: { label: { ru: 'Настоящее', en: 'Present' } },
           3: { label: { ru: 'Будущее', en: 'Future' } },
         },
+        imageURL: 'https://i.ibb.co/twLp8jP5/Image-2.png',
       },
 
       /* ─────────── 3. Ло Шу ─────────── */
@@ -147,6 +149,7 @@ export class SpreadsSeed {
           8: { label: { ru: 'Земля — центр', en: 'Earth-center' } },
           9: { label: { ru: 'Земля — внутреннее', en: 'Earth-inner' } },
         },
+        imageURL: 'https://i.ibb.co/prbNMpfq/Image.png',
       },
     ];
   }

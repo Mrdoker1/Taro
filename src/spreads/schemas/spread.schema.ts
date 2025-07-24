@@ -42,6 +42,9 @@ export class Spread {
 
   @Prop({ type: Object, required: true })
   meta: Record<string, SpreadMetaItem>;
+
+  @Prop({ required: false })
+  imageURL?: string;
 }
 
 export type SpreadDocument = Spread & Document;
