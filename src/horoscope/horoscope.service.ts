@@ -2,7 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DailyHoroscopeResponseDto } from './schemas/daily-horoscope.schema';
-import { DeepseekService } from '../deepseek/deepseek.service';
+import { AiGenerationService } from '../ai-generation/ai-generation.service';
 import { PromptTemplatesService } from '../prompt-templates/prompt-templates.service';
 import { Horoscope } from './schemas/horoscope.schema';
 import * as dayjs from 'dayjs';
@@ -19,7 +19,7 @@ dayjs.tz.setDefault('Europe/Moscow');
 export class HoroscopeService {
   constructor(
     @InjectModel(Horoscope.name) private horoscopeModel: Model<Horoscope>,
-    private readonly deepseekService: DeepseekService,
+    private readonly aiGenerationService: AiGenerationService,
     private readonly promptTemplatesService: PromptTemplatesService,
   ) {}
 
@@ -81,7 +81,7 @@ export class HoroscopeService {
         await this.promptTemplatesService.getTemplateById('daily-horoscope');
 
       // Генерация гороскопа через LLM
-      const horoscope = await this.deepseekService.generate({
+      const horoscope = await this.aiGenerationService.generate({
         prompt: promptTemplate.systemPrompt,
         systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,
@@ -164,7 +164,7 @@ export class HoroscopeService {
         await this.promptTemplatesService.getTemplateById('weekly-horoscope');
 
       // Генерация гороскопа через LLM
-      const horoscope = await this.deepseekService.generate({
+      const horoscope = await this.aiGenerationService.generate({
         prompt: promptTemplate.systemPrompt,
         systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,
@@ -247,7 +247,7 @@ export class HoroscopeService {
         await this.promptTemplatesService.getTemplateById('monthly-horoscope');
 
       // Генерация гороскопа через LLM
-      const horoscope = await this.deepseekService.generate({
+      const horoscope = await this.aiGenerationService.generate({
         prompt: promptTemplate.systemPrompt,
         systemPrompt: promptTemplate.systemPrompt,
         zodiacSign: sign,

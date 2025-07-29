@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { HoroscopeController } from './horoscope.controller';
 import { HoroscopeService } from './horoscope.service';
-import { DeepseekModule } from '../deepseek/deepseek.module';
+import { AiGenerationModule } from '../ai-generation/ai-generation.module';
 import { PromptTemplatesModule } from '../prompt-templates/prompt-templates.module';
 import { Horoscope, HoroscopeSchema } from './schemas/horoscope.schema';
 
@@ -11,7 +11,7 @@ import { Horoscope, HoroscopeSchema } from './schemas/horoscope.schema';
     MongooseModule.forFeature([
       { name: Horoscope.name, schema: HoroscopeSchema },
     ]),
-    DeepseekModule,
+    AiGenerationModule,
     PromptTemplatesModule,
   ],
   controllers: [HoroscopeController],
