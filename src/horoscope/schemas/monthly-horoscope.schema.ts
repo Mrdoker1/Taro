@@ -53,7 +53,7 @@ export class MonthlyHoroscopeResponseDto {
   @ApiProperty({ example: '🙂' })
   mood: string;
 
-  @ApiProperty({ example: '#FF0000' })
+  @ApiProperty({ example: 'красный#FF0000' })
   color: string;
 
   @ApiProperty({ example: 7 })
