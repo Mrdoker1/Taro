@@ -11,6 +11,7 @@ import {
   DEFAULT_GEMINI_MODEL,
   DEFAULT_DEEPSEEK_MODEL,
   DEFAULT_OPENAI_MODEL,
+  DEFAULT_GROK_MODEL,
 } from './constants';
 
 @Injectable()
@@ -18,6 +19,7 @@ export class AiGenerationService {
   private readonly logger = new Logger(AiGenerationService.name);
   private readonly deepseekClient: OpenAI;
   private readonly openaiClient: OpenAI;
+  private readonly grokClient: OpenAI;
   private readonly googleClient: GoogleGenerativeAI;
 
   constructor(private readonly configService: ConfigService) {
@@ -30,6 +32,12 @@ export class AiGenerationService {
     // Инициализация OpenAI клиента
     this.openaiClient = new OpenAI({
       apiKey: this.configService.get<string>('OPENAI_API_KEY'),
+    });
+
+    // Инициализация Grok клиента
+    this.grokClient = new OpenAI({
+      baseURL: 'https://api.x.ai/v1',
+      apiKey: this.configService.get<string>('GROK_API_KEY'),
     });
 
     // Инициализация Google клиента
@@ -93,6 +101,15 @@ export class AiGenerationService {
 
         case AI_PROVIDER.OPENAI:
           baseResult = await this.generateWithOpenAI(
+            systemPrompt,
+            userPrompt,
+            dto,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.GROK:
+          baseResult = await this.generateWithGrok(
             systemPrompt,
             userPrompt,
             dto,
@@ -203,6 +220,43 @@ export class AiGenerationService {
       frequency_penalty: 0,
       presence_penalty: 0,
     });
+
+    const content = completion.choices[0]?.message?.content || '';
+
+    return content;
+  }
+
+  /**
+   * Генерация через Grok (xAI)
+   */
+  private async generateWithGrok(
+    systemPrompt: string,
+    userPrompt: string,
+    dto: GenerateRequestDto,
+    maxTokens: number,
+  ): Promise<string> {
+    if (!this.grokClient) {
+      throw new BadRequestException('Grok API ключ не настроен');
+    }
+
+    const model = dto.grokModel || DEFAULT_GROK_MODEL;
+
+    // Grok API поддерживает только базовые параметры
+    // Увеличиваем лимит токенов для Grok, чтобы избежать обрезания JSON
+    const requestParams: any = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      temperature: dto.temperature || 0.7,
+      max_tokens: Math.max(maxTokens, 1200), // Минимум 1200 токенов для полного JSON
+      // Убираем неподдерживаемые параметры для Grok
+      // top_p, frequency_penalty, presence_penalty не поддерживаются
+    };
+
+    const completion =
+      await this.grokClient.chat.completions.create(requestParams);
 
     const content = completion.choices[0]?.message?.content || '';
 

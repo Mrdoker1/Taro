@@ -15,19 +15,21 @@ export enum AI_PROVIDER {
   DEEPSEEK = 'deepseek',
   GOOGLE = 'google',
   OPENAI = 'openai',
+  GROK = 'grok',
 }
 
 // Конфигурация по умолчанию - здесь можно изменить провайдера
-export const DEFAULT_AI_PROVIDER = AI_PROVIDER.DEEPSEEK;
+export const DEFAULT_AI_PROVIDER = AI_PROVIDER.GOOGLE;
 
 // Модели Google Gemini
 export const GEMINI_MODELS = {
   FLASH_1_5: 'gemini-1.5-flash',
   FLASH_2_0: 'gemini-2.0-flash-exp',
+  FLASH_2_5_LITE: 'gemini-2.5-flash-lite',
   PRO_1_5: 'gemini-1.5-pro',
 } as const;
 
-export const DEFAULT_GEMINI_MODEL = GEMINI_MODELS.FLASH_1_5;
+export const DEFAULT_GEMINI_MODEL = GEMINI_MODELS.FLASH_2_5_LITE;
 
 // Модели DeepSeek
 export const DEEPSEEK_MODELS = {
@@ -48,3 +50,23 @@ export const OPENAI_MODELS = {
 } as const;
 
 export const DEFAULT_OPENAI_MODEL = OPENAI_MODELS.GPT_3_5_TURBO;
+
+// Модели Grok (xAI)
+export const GROK_MODELS = {
+  // Grok 4 (новейшая модель с рассуждениями)
+  GROK_4: 'grok-4',
+  GROK_4_0709: 'grok-4-0709',
+  GROK_4_LATEST: 'grok-4-latest',
+
+  // Grok 3 (предыдущие версии)
+  GROK_3: 'grok-3',
+  GROK_3_MINI: 'grok-3-mini',
+  GROK_3_MINI_FAST: 'grok-3-mini-fast',
+  GROK_3_LATEST: 'grok-3-latest',
+
+  // Grok 2 (старые версии)
+  GROK_2_LATEST: 'grok-2-latest',
+  GROK_2_1212: 'grok-2-1212',
+} as const;
+
+export const DEFAULT_GROK_MODEL = GROK_MODELS.GROK_3_MINI;

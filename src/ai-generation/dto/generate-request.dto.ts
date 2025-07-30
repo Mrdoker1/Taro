@@ -13,6 +13,7 @@ import {
   GEMINI_MODELS,
   DEEPSEEK_MODELS,
   OPENAI_MODELS,
+  GROK_MODELS,
 } from '../constants';
 
 /**
@@ -155,6 +156,16 @@ export class GenerateRequestDto {
   @IsOptional()
   @IsString()
   openaiModel?: string;
+
+  @ApiProperty({
+    description: 'Модель для Grok (xAI)',
+    required: false,
+    enum: Object.values(GROK_MODELS),
+    example: GROK_MODELS.GROK_3_MINI,
+  })
+  @IsOptional()
+  @IsString()
+  grokModel?: string;
 }
 
 /**
