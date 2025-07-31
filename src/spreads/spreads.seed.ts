@@ -28,7 +28,19 @@ export class SpreadsSeed {
 
       this.logger.log(`Создано ${seedData.length} раскладов`);
     } else {
-      this.logger.log('Расклады уже существуют в базе данных');
+      this.logger.log('Обновление существующих раскладов...');
+
+      const seedData = this.getSeedData();
+
+      for (const spread of seedData) {
+        await this.spreadModel.updateOne(
+          { key: spread.key },
+          { $set: spread },
+          { upsert: true },
+        );
+      }
+
+      this.logger.log(`Обновлено/создано ${seedData.length} раскладов`);
     }
   }
 
@@ -150,6 +162,69 @@ export class SpreadsSeed {
           9: { label: { ru: 'Земля — внутреннее', en: 'Earth-inner' } },
         },
         imageURL: 'https://i.ibb.co/prbNMpfq/Image.png',
+      },
+      /* ─────────── 4. Ступени Решения ─────────── */
+      {
+        key: 'decision-steps',
+        available: true,
+        paid: false,
+        translations: {
+          ru: {
+            name: 'Ступени Решения',
+            description:
+              'Десять шагов от контекста и ресурсов к выбору и действию. Чтение змейкой: верхний ряд → правый край → нижний ряд влево.',
+          },
+          en: {
+            name: 'Decision Steps',
+            description:
+              'Ten steps from context and resources to choice and action. Serpentine reading: top row → right edge → bottom row leftwards.',
+          },
+        },
+        questions: {
+          ru: [
+            'Каков текущий контекст и отправная точка?',
+            'Что даёт импульс/мотивацию?',
+            'Какие ресурсы доступны прямо сейчас?',
+            'Что тормозит или ограничивает?',
+            'Какая возможность уже на горизонте?',
+            'В чём суть выбора/порог решения?',
+            'Какой практический шаг сделать первым?',
+            'На чью поддержку можно опереться?',
+            'Как снизить риск и цену ошибки?',
+            'Каков ближайший результат и урок?',
+          ],
+          en: [
+            'What is the current context and starting point?',
+            'What provides the impulse/motivation?',
+            'Which resources are immediately available?',
+            'What slows down or limits you?',
+            'Which opportunity is already on the horizon?',
+            'What is the decision threshold/core choice?',
+            'What practical first step to take?',
+            'Whose support can you rely on?',
+            'How to mitigate risk and cost?',
+            'What is the near-term result and lesson?',
+          ],
+        },
+        cardsCount: 10,
+        // Порядок выкладки: 1–2–3–4–5 (верхний ряд), затем 6–7–8–9–10 (нижний ряд справа-налево)
+        grid: [
+          [1, 2, 3, 4, 5],
+          [10, 9, 8, 7, 6],
+        ],
+        meta: {
+          1: { label: { ru: 'Контекст', en: 'Context' } },
+          2: { label: { ru: 'Импульс', en: 'Impulse' } },
+          3: { label: { ru: 'Ресурсы', en: 'Resources' } },
+          4: { label: { ru: 'Ограничение', en: 'Constraint' } },
+          5: { label: { ru: 'Возможность', en: 'Opportunity' } },
+          6: { label: { ru: 'Порог решения', en: 'Decision threshold' } },
+          7: { label: { ru: 'Первый шаг', en: 'First step' } },
+          8: { label: { ru: 'Поддержка', en: 'Support' } },
+          9: { label: { ru: 'Снижение риска', en: 'Risk mitigation' } },
+          10: { label: { ru: 'Исход и урок', en: 'Outcome & lesson' } },
+        },
+        imageURL: 'https://i.ibb.co/mVHSdZMq/image-163.png',
       },
     ];
   }
