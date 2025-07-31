@@ -10,6 +10,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { AiGenerationService } from './ai-generation.service';
 import { GenerateRequestDto, RequestExample } from './dto/generate-request.dto';
 import { GenerateResponseDto } from './dto/generate-response.dto';
+import { DEFAULT_AI_PROVIDER } from './constants';
 
 @ApiTags('AI Generation')
 @Controller()
@@ -48,15 +49,16 @@ export class AiGenerationController {
   })
   async generate(@Body() dto: GenerateRequestDto): Promise<any> {
     try {
+      // Определяем фактически используемый провайдер
+      const actualProvider = dto.provider || DEFAULT_AI_PROVIDER;
+
       this.logger.log(
-        `Запрос на генерацию: провайдер=${dto.provider || 'default'}, промт=${dto.prompt.substring(0, 100)}...`,
+        `Запрос на генерацию: провайдер=${actualProvider}, промт=${dto.prompt.substring(0, 100)}...`,
       );
 
       const result = await this.aiGenerationService.generate(dto);
 
-      this.logger.log(
-        `Генерация завершена: провайдер=${dto.provider || 'default'}`,
-      );
+      this.logger.log(`Генерация завершена: провайдер=${actualProvider}`);
 
       return result;
     } catch (error) {
