@@ -12,6 +12,7 @@ import {
   DEFAULT_DEEPSEEK_MODEL,
   DEFAULT_OPENAI_MODEL,
   DEFAULT_GROK_MODEL,
+  DEFAULT_QWEN_MODEL,
 } from './constants';
 
 @Injectable()
@@ -20,6 +21,7 @@ export class AiGenerationService {
   private readonly deepseekClient: OpenAI;
   private readonly openaiClient: OpenAI;
   private readonly grokClient: OpenAI;
+  private readonly qwenClient: OpenAI;
   private readonly googleClient: GoogleGenerativeAI;
 
   constructor(private readonly configService: ConfigService) {
@@ -39,6 +41,18 @@ export class AiGenerationService {
       baseURL: 'https://api.x.ai/v1',
       apiKey: this.configService.get<string>('GROK_API_KEY'),
     });
+
+    // Инициализация Qwen клиента
+    const qwenApiKey = this.configService.get<string>('QWEN_API_KEY');
+    if (qwenApiKey) {
+      this.qwenClient = new OpenAI({
+        baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+        apiKey: qwenApiKey,
+      });
+      this.logger.log('Qwen клиент инициализирован');
+    } else {
+      this.logger.warn('QWEN_API_KEY не найден в конфигурации');
+    }
 
     // Инициализация Google клиента
     const googleApiKey = this.configService.get<string>('GOOGLEAPI');
@@ -110,6 +124,15 @@ export class AiGenerationService {
 
         case AI_PROVIDER.GROK:
           baseResult = await this.generateWithGrok(
+            systemPrompt,
+            userPrompt,
+            dto,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.QWEN:
+          baseResult = await this.generateWithQwen(
             systemPrompt,
             userPrompt,
             dto,
@@ -295,5 +318,41 @@ export class AiGenerationService {
     const content = response.text() || '';
 
     return content;
+  }
+
+  /**
+   * Генерация через Qwen
+   */
+  private async generateWithQwen(
+    systemPrompt: string,
+    userPrompt: string,
+    dto: GenerateRequestDto,
+    maxTokens: number,
+  ): Promise<string> {
+    if (!this.qwenClient) {
+      throw new BadRequestException(
+        'Qwen клиент не инициализирован. Проверьте QWEN_API_KEY',
+      );
+    }
+
+    const model = dto.qwenModel || DEFAULT_QWEN_MODEL;
+
+    try {
+      const completion = await this.qwenClient.chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: maxTokens,
+        temperature: dto.temperature,
+      });
+
+      const content = completion.choices[0]?.message?.content || '';
+      return content;
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к Qwen API: ${error.message}`);
+      throw error;
+    }
   }
 }

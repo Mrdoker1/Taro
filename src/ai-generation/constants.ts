@@ -16,10 +16,11 @@ export enum AI_PROVIDER {
   GOOGLE = 'google',
   OPENAI = 'openai',
   GROK = 'grok',
+  QWEN = 'qwen',
 }
 
 // Конфигурация по умолчанию - здесь можно изменить провайдера
-export const DEFAULT_AI_PROVIDER = AI_PROVIDER.GOOGLE;
+export const DEFAULT_AI_PROVIDER = AI_PROVIDER.QWEN;
 
 // Модели Google Gemini
 export const GEMINI_MODELS = {
@@ -70,3 +71,17 @@ export const GROK_MODELS = {
 } as const;
 
 export const DEFAULT_GROK_MODEL = GROK_MODELS.GROK_3_MINI;
+
+// Модели Qwen
+export const QWEN_MODELS = {
+  QWEN_PLUS: 'qwen-plus',
+  QWEN_TURBO: 'qwen-turbo',
+  QWEN_MAX: 'qwen-max',
+  QWEN_LONG: 'qwen-long',
+  QWEN2_5_72B_INSTRUCT: 'qwen2.5-72b-instruct',
+  QWEN2_5_32B_INSTRUCT: 'qwen2.5-32b-instruct',
+  QWEN2_5_14B_INSTRUCT: 'qwen2.5-14b-instruct',
+  QWEN2_5_7B_INSTRUCT: 'qwen2.5-7b-instruct',
+} as const;
+
+export const DEFAULT_QWEN_MODEL = QWEN_MODELS.QWEN_PLUS;
