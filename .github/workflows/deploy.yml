@@ -1,0 +1,31 @@
+name: Deploy to server
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: 109.196.100.242
+          username: appuser
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
+          script: |
+            set -e
+            cd /opt/app
+            git fetch --all
+            git reset --hard origin/main
+
+            if [ ! -f package-lock.json ]; then npm install; fi
+            npm ci
+            npm run build
+
+            pm2 reload taro-api --update-env
+
+            # лёгкий smoke-test (не валим job при фейле)
+            curl -fsS https://taroapi.uno/ -o /dev/null || true
