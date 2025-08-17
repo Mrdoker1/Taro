@@ -6,7 +6,7 @@ export const SAMPLE_DECKS = [
   {
     key: 'rider',
     available: true,
-    coverImageUrl: 'https://example.com/images/rider/cover.png',
+    coverImageUrl: 'https://i.ibb.co/6c5GGY7z/Cover-1.png',
     translations: {
       ru: {
         name: 'Таро Райдера–Уэйта',
@@ -20,7 +20,7 @@ export const SAMPLE_DECKS = [
     cards: [
       {
         id: 'the-fool',
-        imageUrl: 'https://example.com/images/rider/cards/the-fool.png',
+        imageUrl: 'https://i.ibb.co/Fk0Bhz6z/fool.png',
         translations: {
           ru: {
             name: 'Шут',
@@ -40,7 +40,7 @@ export const SAMPLE_DECKS = [
       },
       {
         id: 'the-magician',
-        imageUrl: 'https://example.com/images/rider/cards/the-magician.png',
+        imageUrl: 'https://i.ibb.co/nNqPfBf0/Cover-2.png',
         translations: {
           ru: {
             name: 'Маг',
