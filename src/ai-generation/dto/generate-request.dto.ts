@@ -14,10 +14,11 @@ import {
   DEEPSEEK_MODELS,
   OPENAI_MODELS,
   GROK_MODELS,
+  QWEN_MODELS,
 } from '../constants';
 
 /**
- * DTO для запроса генерации через AI (поддерживает DeepSeek и Google Gemini)
+ * DTO для запроса генерации через AI (поддерживает DeepSeek, Google Gemini, OpenAI, Grok и Qwen)
  */
 export class GenerateRequestDto {
   @ApiProperty({
@@ -166,6 +167,16 @@ export class GenerateRequestDto {
   @IsOptional()
   @IsString()
   grokModel?: string;
+
+  @ApiProperty({
+    description: 'Модель для Qwen',
+    required: false,
+    enum: Object.values(QWEN_MODELS),
+    example: QWEN_MODELS.QWEN_PLUS,
+  })
+  @IsOptional()
+  @IsString()
+  qwenModel?: string;
 }
 
 /**
@@ -176,7 +187,7 @@ export const RequestExample = {
   temperature: 0.7,
   maxTokens: 800,
   responseLang: 'ru',
-  provider: AI_PROVIDER.DEEPSEEK,
+  provider: AI_PROVIDER.QWEN,
 
   systemPrompt: `Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро, предсказаниях и эзотерике.
 
