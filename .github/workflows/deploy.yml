@@ -3,29 +3,32 @@ name: Deploy to server
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Deploy via SSH
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: 109.196.100.242
-          username: appuser
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
-          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }}
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # <- если нет пароля у ключа, удали эту строку
+          port: 22
           script: |
             set -e
             cd /opt/app
-            git fetch --all
-            git reset --hard origin/main
-
-            if [ ! -f package-lock.json ]; then npm install; fi
+            git fetch origin main --quiet
+            git checkout main
+            git pull --ff-only
             npm ci
             npm run build
-
-            pm2 reload taro-api --update-env
-
-            # лёгкий smoke-test (не валим job при фейле)
-            curl -fsS https://taroapi.uno/ -o /dev/null || true
+            echo "sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > .deploy_info
+            pm2 restart taro-api --update-env
+            pm2 save
+            echo "DEPLOYED $(cat .deploy_info)"
