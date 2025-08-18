@@ -33,18 +33,33 @@ async function bootstrap() {
 }
 
 function configureCors(app) {
-  // Получаем список разрешенных источников из переменной окружения или используем значения по умолчанию
-  const allowedOrigins = process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(',')
-    : ['http://localhost:5173', 'https://mrdoker1.github.io'];
+  // статичные домены из .env (без пробелов)
+  const staticOrigins = (process.env.ALLOWED_ORIGINS ?? '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 
-  console.log('CORS allowed origins:', allowedOrigins);
+  // динамичные домены VK Mini Apps (prod/stage, pages и pages-ac)
+  const vkHosts = [
+    /^https:\/\/(prod|stage)-app\d+(?:-[a-z0-9]+)?\.pages(?:-ac)?\.vk-apps\.com$/,
+  ];
+
+  console.log('CORS static origins:', staticOrigins);
 
   app.enableCors({
-    origin: allowedOrigins,
-    credentials: true, // Позволяет передавать cookies и заголовки Authorization
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // Разрешенные методы
-    allowedHeaders: ['Content-Type', 'Authorization'], // Разрешенные заголовки
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true); // curl/postman и пр.
+
+      const allowed =
+        staticOrigins.includes(origin) || vkHosts.some(re => re.test(origin));
+
+      return allowed
+        ? callback(null, true)
+        : callback(new Error('Not allowed by CORS'));
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   });
 }
 
