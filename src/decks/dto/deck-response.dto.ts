@@ -70,7 +70,7 @@ export class DeckSummaryDto {
 
   @ApiProperty({
     description: 'URL обложки колоды',
-    example: 'https://example.com/images/rider/cover.png',
+    example: 'https://i.ibb.co/nNqPfBf0/Cover-2.png',
   })
   coverImageUrl: string;
 
