@@ -6,7 +6,9 @@ import {
   IsString,
   Max,
   Min,
+  IsIn,
 } from 'class-validator';
+import { DEEPSEEK_MODELS } from '../constants';
 
 /**
  * Пример запроса в формате JSON
@@ -134,4 +136,16 @@ export class GenerateRequestDto {
   @IsString()
   @IsOptional()
   systemPrompt?: string;
+
+  @ApiProperty({
+    description: 'Модель DeepSeek для использования',
+    example: 'deepseek-chat',
+    default: 'deepseek-chat',
+    enum: Object.values(DEEPSEEK_MODELS),
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  @IsIn(Object.values(DEEPSEEK_MODELS))
+  model?: string;
 }

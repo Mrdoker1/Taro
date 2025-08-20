@@ -1,5 +1,15 @@
 export const MAX_OUTPUT_TOKENS = 1000;
 
+// Доступные модели DeepSeek (от самой быстрой к самой мощной)
+export const DEEPSEEK_MODELS = {
+  CHAT: 'deepseek-chat', // DeepSeek-V3 - самая быстрая и универсальная
+  CODER: 'deepseek-coder', // Специализированная для кода
+  REASONER: 'deepseek-reasoner', // Для сложных рассуждений (медленнее)
+} as const;
+
+// По умолчанию используем самую быструю модель
+export const DEFAULT_MODEL = DEEPSEEK_MODELS.CHAT;
+
 // Системный промт для ограничения контекста и формата ответа
 export const SYSTEM_PROMPT = `Ты - помощник для генерации текста.
 Твоя задача - отвечать на вопросы пользователей в максимально информативной форме.

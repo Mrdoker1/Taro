@@ -172,7 +172,7 @@ export class GenerateRequestDto {
     description: 'Модель для Qwen',
     required: false,
     enum: Object.values(QWEN_MODELS),
-    example: QWEN_MODELS.QWEN_PLUS,
+    example: QWEN_MODELS.FLASH,
   })
   @IsOptional()
   @IsString()
