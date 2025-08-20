@@ -34,8 +34,9 @@ export const DEFAULT_GEMINI_MODEL = GEMINI_MODELS.FLASH_2_5_LITE;
 
 // Модели DeepSeek
 export const DEEPSEEK_MODELS = {
-  CHAT: 'deepseek-chat',
-  REASONER: 'deepseek-reasoner',
+  CHAT: 'deepseek-chat', // DeepSeek-V3 - самая быстрая и универсальная
+  REASONER: 'deepseek-reasoner', // DeepSeek-R1 - для сложного мышления (медленнее)
+  CODER: 'deepseek-coder', // Специализированная для кода
 } as const;
 
 export const DEFAULT_DEEPSEEK_MODEL = DEEPSEEK_MODELS.CHAT;
@@ -74,14 +75,15 @@ export const DEFAULT_GROK_MODEL = GROK_MODELS.GROK_3_MINI;
 
 // Модели Qwen
 export const QWEN_MODELS = {
-  QWEN_PLUS: 'qwen-plus',
-  QWEN_TURBO: 'qwen-turbo',
-  QWEN_MAX: 'qwen-max',
-  QWEN_LONG: 'qwen-long',
+  FLASH: 'qwen-flash', // Самая быстрая модель Qwen
+  TURBO: 'qwen-turbo', // Быстрая модель (deprecated, рекомендуется Flash)
+  PLUS: 'qwen-plus', // Сбалансированная модель
+  MAX: 'qwen-max', // Самая мощная модель
+  LONG: 'qwen-long', // Для длинных контекстов
   QWEN2_5_72B_INSTRUCT: 'qwen2.5-72b-instruct',
   QWEN2_5_32B_INSTRUCT: 'qwen2.5-32b-instruct',
   QWEN2_5_14B_INSTRUCT: 'qwen2.5-14b-instruct',
   QWEN2_5_7B_INSTRUCT: 'qwen2.5-7b-instruct',
 } as const;
 
-export const DEFAULT_QWEN_MODEL = QWEN_MODELS.QWEN_PLUS;
+export const DEFAULT_QWEN_MODEL = QWEN_MODELS.FLASH;

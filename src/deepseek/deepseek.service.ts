@@ -2,7 +2,7 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import OpenAI from 'openai';
-import { SYSTEM_PROMPT, MAX_OUTPUT_TOKENS } from './constants';
+import { SYSTEM_PROMPT, MAX_OUTPUT_TOKENS, DEFAULT_MODEL } from './constants';
 
 @Injectable()
 export class DeepseekService {
@@ -49,6 +49,9 @@ export class DeepseekService {
       // Определяем максимальное количество токенов
       const maxTokens = dto.maxTokens || MAX_OUTPUT_TOKENS;
 
+      // Определяем модель для использования
+      const selectedModel = dto.model || DEFAULT_MODEL;
+
       // Выполняем запрос к API DeepSeek
       const completion = await this.openai.chat.completions.create({
         messages: [
@@ -61,7 +64,7 @@ export class DeepseekService {
             content: userPrompt,
           },
         ],
-        model: 'deepseek-chat',
+        model: selectedModel, // Используем выбранную модель или самую быструю по умолчанию
         temperature: dto.temperature || 0.7,
         max_tokens: maxTokens,
         response_format: { type: 'json_object' }, // Требуем JSON формат
