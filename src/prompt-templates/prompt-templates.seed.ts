@@ -19,33 +19,18 @@ export class PromptTemplatesSeed {
    * Создает начальные данные для шаблонов запросов
    */
   async seed(): Promise<void> {
-    const count = await this.promptTemplateModel.countDocuments().exec();
+    this.logger.log('Начато обновление шаблонов запросов');
 
-    if (count === 0) {
-      this.logger.log('Начато создание начальных данных для шаблонов запросов');
+    const seedData = this.getSeedData();
+    const seedKeys = seedData.map(template => template.key);
 
-      const seedData = this.getSeedData();
+    // Удаляем все существующие seed-шаблоны
+    await this.promptTemplateModel.deleteMany({ key: { $in: seedKeys } });
 
-      for (const template of seedData) {
-        await this.promptTemplateModel.create(template);
-      }
+    // Создаем заново
+    await this.promptTemplateModel.insertMany(seedData);
 
-      this.logger.log(`Создано ${seedData.length} шаблонов запросов`);
-    } else {
-      this.logger.log('Обновление существующих шаблонов запросов...');
-
-      const seedData = this.getSeedData();
-
-      for (const template of seedData) {
-        await this.promptTemplateModel.updateOne(
-          { key: template.key },
-          { $set: template },
-          { upsert: true },
-        );
-      }
-
-      this.logger.log(`Обновлено/создано ${seedData.length} шаблонов запросов`);
-    }
+    this.logger.log(`Пересозданы ${seedData.length} шаблонов запросов`);
   }
 
   /**
@@ -145,7 +130,7 @@ export class PromptTemplatesSeed {
 
           3. Цвет дня(преобладающий для этого знака):
             - Формат: цвет#RRGGBB
-            - Случайная цветовая семья, HSL→HEX, избегай банальных и повторяющихся HEX
+            - Случайная цветовая семья, HSL→HEX
             - Название цвета на том же языке, что и прогноз
 
           4. Число:
@@ -182,7 +167,7 @@ export class PromptTemplatesSeed {
 
           3. Цвет недели(преобладающий для этого знака):
             - Формат: цвет#RRGGBB
-            - Случайная цветовая семья, HSL→HEX, избегай банальных и повторяющихся HEX
+            - Случайная цветовая семья, HSL→HEX
             - Название цвета на том же языке, что и прогноз
 
           4. Число:
@@ -220,7 +205,7 @@ export class PromptTemplatesSeed {
 
           3. Цвет месяца(преобладающий для этого знака):
             - Формат: цвет#RRGGBB
-            - Случайная цветовая семья, HSL→HEX, избегай банальных и повторяющихся HEX
+            - Случайная цветовая семья, HSL→HEX
             - Название цвета на том же языке, что и прогноз
 
           4. Число:
