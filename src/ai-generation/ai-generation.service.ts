@@ -348,8 +348,7 @@ export class AiGenerationService {
         temperature: dto.temperature,
       });
 
-      const content = completion.choices[0]?.message?.content || '';
-      return content;
+      return completion.choices[0]?.message?.content || '';
     } catch (error) {
       this.logger.error(`Ошибка при запросе к Qwen API: ${error.message}`);
       throw error;

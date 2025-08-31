@@ -84,6 +84,10 @@ export const QWEN_MODELS = {
   QWEN2_5_32B_INSTRUCT: 'qwen2.5-32b-instruct',
   QWEN2_5_14B_INSTRUCT: 'qwen2.5-14b-instruct',
   QWEN2_5_7B_INSTRUCT: 'qwen2.5-7b-instruct',
+  // Vision модели
+  VL_PLUS: 'qwen-vl-plus', // Модель для работы с изображениями
+  VL_MAX: 'qwen-vl-max', // Мощная модель для работы с изображениями
 } as const;
 
 export const DEFAULT_QWEN_MODEL = QWEN_MODELS.FLASH;
+export const DEFAULT_QWEN_VL_MODEL = QWEN_MODELS.VL_PLUS;
