@@ -28,9 +28,24 @@ export class OcrService {
       let imageSource: string;
 
       if (file) {
-        // Конвертируем файл в base64 для Qwen
-        imageSource = `data:${file.mimetype};base64,${file.buffer.toString('base64')}`;
-        this.logger.log(`Обрабатываем загруженный файл: ${file.originalname}`);
+        this.logger.log(
+          `Обрабатываем загруженный файл: ${file.originalname}, размер: ${file.size} байт`,
+        );
+
+        // Проверяем размер файла (максимум 10MB)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new BadRequestException(
+            'Файл слишком большой. Максимальный размер: 10MB',
+          );
+        }
+
+        // Конвертируем файл в base64 для Qwen VL
+        const base64Data = file.buffer.toString('base64');
+        imageSource = `data:image/jpeg;base64,${base64Data}`;
+
+        this.logger.log(
+          `Файл конвертирован в base64, длина: ${base64Data.length} символов`,
+        );
       } else if (imageUrl) {
         imageSource = imageUrl;
         this.logger.log(`Обрабатываем URL изображения: ${imageUrl}`);
@@ -40,47 +55,65 @@ export class OcrService {
         );
       }
 
-      const systemPrompt = `Извлеки весь ВИДИМЫЙ текст с изображения, сформируй JSON`;
+      const systemPrompt = `Извлеки весь ВИДИМЫЙ текст с изображения и верни результат в формате JSON.`;
 
-      const response = await this.qwenClient.chat.completions.create({
-        model: DEFAULT_QWEN_VL_MODEL,
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: imageSource,
+      this.logger.log(
+        `Отправляем запрос к Qwen VL API с моделью: ${DEFAULT_QWEN_VL_MODEL}`,
+      );
+      this.logger.log(`Тип источника изображения: ${file ? 'файл' : 'URL'}`);
+
+      const response = await this.qwenClient.chat.completions.create(
+        {
+          model: DEFAULT_QWEN_VL_MODEL,
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: imageSource,
+                  },
                 },
-              },
-              {
-                type: 'text',
-                text: systemPrompt,
-              },
-            ],
-          },
-        ],
-        max_tokens: 4000,
-      });
+                {
+                  type: 'text',
+                  text: systemPrompt,
+                },
+              ],
+            },
+          ],
+          max_tokens: 4000,
+        },
+        {
+          timeout: 30000, // 30 секунд тайм-аут
+        },
+      );
 
       const recognizedText = response.choices[0]?.message?.content || '';
       const processingTime = Date.now() - startTime;
 
       this.logger.log(`Текст успешно распознан за ${processingTime}мс`);
+      this.logger.log(`Полученный ответ: ${recognizedText}`);
 
-      // Очищаем ответ от markdown блоков и пытаемся распарсить как JSON
-      let cleanedText = recognizedText.trim();
+      // Очищаем ответ от markdown разметки
+      let cleanedText = recognizedText;
 
-      // Убираем markdown блоки ```json и ```
-      cleanedText = cleanedText
-        .replace(/^```json\s*/i, '')
-        .replace(/\s*```$/, '');
+      // Удаляем ```json в начале и ``` в конце
+      cleanedText = cleanedText.replace(/^```json\s*/, '');
+      cleanedText = cleanedText.replace(/\s*```$/, '');
+      cleanedText = cleanedText.trim();
 
+      // Пытаемся распарсить ответ как JSON
       try {
-        return JSON.parse(cleanedText);
-      } catch {
-        // Если не JSON, возвращаем очищенный текст
+        const jsonResult = JSON.parse(cleanedText);
+        this.logger.log('JSON успешно распарсен');
+        return jsonResult;
+      } catch (parseError) {
+        this.logger.warn(
+          `Не удалось распарсить как JSON: ${parseError.message}`,
+        );
+        this.logger.warn(`Очищенный текст: ${cleanedText}`);
+        // Если не JSON, возвращаем как обычный текст
         return cleanedText;
       }
     } catch (error) {
