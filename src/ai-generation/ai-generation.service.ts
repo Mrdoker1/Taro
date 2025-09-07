@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerateRequestDto } from './dto/generate-request.dto';
+import { ChatRequestDto, ChatResponseDto } from './dto/chat-request.dto';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -351,6 +352,182 @@ export class AiGenerationService {
       return completion.choices[0]?.message?.content || '';
     } catch (error) {
       this.logger.error(`Ошибка при запросе к Qwen API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Простой чат с AI без шаблонов
+   */
+  async chat(dto: ChatRequestDto): Promise<ChatResponseDto> {
+    const provider = dto.provider || DEFAULT_AI_PROVIDER;
+    const temperature = dto.temperature ?? 0.7;
+    const maxTokens = dto.maxTokens ?? 1000;
+
+    this.logger.log(
+      `Начинаем чат с ${provider}: температура=${temperature}, maxTokens=${maxTokens}`,
+    );
+
+    let response: string;
+
+    try {
+      switch (provider) {
+        case AI_PROVIDER.DEEPSEEK:
+          response = await this.chatWithDeepSeek(
+            dto.message,
+            temperature,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.OPENAI:
+          response = await this.chatWithOpenAI(
+            dto.message,
+            temperature,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.GROK:
+          response = await this.chatWithGrok(
+            dto.message,
+            temperature,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.QWEN:
+          response = await this.chatWithQwen(
+            dto.message,
+            temperature,
+            maxTokens,
+          );
+          break;
+
+        case AI_PROVIDER.GOOGLE:
+          response = await this.chatWithGoogle(
+            dto.message,
+            temperature,
+            maxTokens,
+          );
+          break;
+
+        default:
+          throw new BadRequestException(
+            `Неподдерживаемый провайдер: ${provider as string}`,
+          );
+      }
+
+      return {
+        response,
+        provider,
+        timestamp: new Date().toISOString(),
+      };
+    } catch (error) {
+      this.logger.error(`Ошибка в чате с ${provider}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async chatWithDeepSeek(
+    message: string,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<string> {
+    try {
+      const completion = await this.deepseekClient.chat.completions.create({
+        model: DEFAULT_DEEPSEEK_MODEL,
+        messages: [{ role: 'user', content: message }],
+        max_tokens: maxTokens,
+        temperature: temperature,
+      });
+
+      return completion.choices[0]?.message?.content || '';
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к DeepSeek API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async chatWithOpenAI(
+    message: string,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<string> {
+    try {
+      const completion = await this.openaiClient.chat.completions.create({
+        model: DEFAULT_OPENAI_MODEL,
+        messages: [{ role: 'user', content: message }],
+        max_tokens: maxTokens,
+        temperature: temperature,
+      });
+
+      return completion.choices[0]?.message?.content || '';
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к OpenAI API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async chatWithGrok(
+    message: string,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<string> {
+    try {
+      const completion = await this.grokClient.chat.completions.create({
+        model: DEFAULT_GROK_MODEL,
+        messages: [{ role: 'user', content: message }],
+        max_tokens: maxTokens,
+        temperature: temperature,
+      });
+
+      return completion.choices[0]?.message?.content || '';
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к Grok API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async chatWithQwen(
+    message: string,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<string> {
+    try {
+      const completion = await this.qwenClient.chat.completions.create({
+        model: DEFAULT_QWEN_MODEL,
+        messages: [{ role: 'user', content: message }],
+        max_tokens: maxTokens,
+        temperature: temperature,
+      });
+
+      return completion.choices[0]?.message?.content || '';
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к Qwen API: ${error.message}`);
+      throw error;
+    }
+  }
+
+  private async chatWithGoogle(
+    message: string,
+    temperature: number,
+    maxTokens: number,
+  ): Promise<string> {
+    try {
+      const model = this.googleClient.getGenerativeModel({
+        model: DEFAULT_GEMINI_MODEL,
+        generationConfig: {
+          temperature: temperature,
+          maxOutputTokens: maxTokens,
+        },
+      });
+
+      const result = await model.generateContent(message);
+      const response = result.response;
+      return response.text();
+    } catch (error) {
+      this.logger.error(`Ошибка при запросе к Google API: ${error.message}`);
       throw error;
     }
   }
