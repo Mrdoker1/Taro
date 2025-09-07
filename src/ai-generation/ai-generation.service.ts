@@ -2,6 +2,10 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { GenerateRequestDto } from './dto/generate-request.dto';
 import { ChatRequestDto, ChatResponseDto } from './dto/chat-request.dto';
+import {
+  DocumentAnalysisRequestDto,
+  DocumentAnalysisResponseDto,
+} from './dto/document-analysis-request.dto';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -78,6 +82,32 @@ export class AiGenerationService {
 
       // Определяем провайдера (из запроса или по умолчанию)
       const provider = dto.provider || DEFAULT_AI_PROVIDER;
+
+      // Определяем модель для логирования
+      let model: string;
+      switch (provider) {
+        case AI_PROVIDER.OPENAI:
+          model = dto.openaiModel || DEFAULT_OPENAI_MODEL;
+          break;
+        case AI_PROVIDER.QWEN:
+          model = dto.qwenModel || DEFAULT_QWEN_MODEL;
+          break;
+        case AI_PROVIDER.DEEPSEEK:
+          model = dto.deepseekModel || DEFAULT_DEEPSEEK_MODEL;
+          break;
+        case AI_PROVIDER.GROK:
+          model = dto.grokModel || DEFAULT_GROK_MODEL;
+          break;
+        case AI_PROVIDER.GOOGLE:
+          model = dto.geminiModel || DEFAULT_GEMINI_MODEL;
+          break;
+        default:
+          model = 'неизвестная';
+      }
+
+      this.logger.log(
+        `Генерация: провайдер=${provider}, модель=${model}, температура=${dto.temperature ?? 'default'}`,
+      );
 
       // Подготавливаем общие параметры
       const systemPrompt = dto.systemPrompt || SYSTEM_PROMPT;
@@ -168,7 +198,7 @@ export class AiGenerationService {
 
         const parsedResponse = JSON.parse(jsonString);
         this.logger.log(
-          `Сгенерирован контент через ${provider}, время: ${Date.now() - startTime}ms`,
+          `Сгенерирован контент: ${provider}/${model}, время: ${Date.now() - startTime}ms`,
         );
         return parsedResponse;
       } catch {
@@ -364,8 +394,30 @@ export class AiGenerationService {
     const temperature = dto.temperature ?? 0.7;
     const maxTokens = dto.maxTokens ?? 1000;
 
+    // Определяем модель для логирования
+    let model: string;
+    switch (provider) {
+      case AI_PROVIDER.OPENAI:
+        model = DEFAULT_OPENAI_MODEL;
+        break;
+      case AI_PROVIDER.QWEN:
+        model = DEFAULT_QWEN_MODEL;
+        break;
+      case AI_PROVIDER.DEEPSEEK:
+        model = DEFAULT_DEEPSEEK_MODEL;
+        break;
+      case AI_PROVIDER.GROK:
+        model = DEFAULT_GROK_MODEL;
+        break;
+      case AI_PROVIDER.GOOGLE:
+        model = DEFAULT_GEMINI_MODEL;
+        break;
+      default:
+        model = 'неизвестная';
+    }
+
     this.logger.log(
-      `Начинаем чат с ${provider}: температура=${temperature}, maxTokens=${maxTokens}`,
+      `Чат: провайдер=${provider}, модель=${model}, температура=${temperature}, maxTokens=${maxTokens}`,
     );
 
     let response: string;
@@ -417,6 +469,10 @@ export class AiGenerationService {
             `Неподдерживаемый провайдер: ${provider as string}`,
           );
       }
+
+      this.logger.log(
+        `Чат завершен: ${provider}/${model}, длина ответа: ${response.length} символов`,
+      );
 
       return {
         response,
@@ -529,6 +585,176 @@ export class AiGenerationService {
     } catch (error) {
       this.logger.error(`Ошибка при запросе к Google API: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * Глубокий анализ документа с подсветкой полей
+   */
+  async analyzeDocument(
+    dto: DocumentAnalysisRequestDto,
+  ): Promise<DocumentAnalysisResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      const provider = dto.provider || DEFAULT_AI_PROVIDER;
+      this.logger.log(
+        `Начинаем анализ документа с помощью провайдера: ${provider}`,
+      );
+
+      // Специализированный промпт для анализа документов
+      const systemPrompt = `Ты - эксперт аналитик документов. Твоя задача:
+      1. Внимательно изучить предоставленную JSON структуру документа
+      2. Ответить на вопрос пользователя максимально точно и информативно
+      3. Определить какие поля в JSON использовались для формирования ответа
+
+      ВАЖНЫЕ ПРАВИЛА:
+      - Анализируй документ полностью, учитывая всю структуру
+      - Отвечай развернуто и профессионально
+      - Указывай точные значения из документа
+      - Проводи вычисления если нужно (например, возраст по дате рождения)
+
+      ФОРМАТ ОТВЕТА - строго JSON:
+      {
+        "answer": "подробный профессиональный ответ на вопрос",
+        "highlights": ["путь.к.полю1", "путь.к.полю2", "поле_верхнего_уровня"]
+      }
+
+      ПРАВИЛА для highlights:
+      - Указывай точный путь к полям через точку (например: "паспорт.тип", "дата_рождения")
+      - Включай ВСЕ поля, которые использовались для ответа
+      - Для вложенных объектов: "объект.поле"
+      - Для массивов: "массив.0.поле"
+      - Поля верхнего уровня указывай без точек: "страна", "имя"
+      - Максимум 15 полей для подсветки
+
+      Отвечай ТОЛЬКО валидным JSON без markdown разметки и комментариев.`;
+
+      const userPrompt = `СТРУКТУРА ДОКУМЕНТА (JSON):
+      ${JSON.stringify(dto.documentContext, null, 2)}
+
+      ВОПРОС ПОЛЬЗОВАТЕЛЯ: ${dto.question}
+
+      Проанализируй документ, ответь на вопрос и укажи все релевантные поля для подсветки.`;
+
+      let result: string;
+
+      // Создаем совместимый объект для методов генерации
+      const generateDto = {
+        ...dto,
+        prompt: userPrompt, // добавляем недостающее поле
+        temperature: dto.temperature ?? 0.3,
+      } as GenerateRequestDto;
+
+      // Определяем модель для логирования
+      let model: string;
+      switch (provider) {
+        case AI_PROVIDER.OPENAI:
+          model = generateDto.openaiModel || DEFAULT_OPENAI_MODEL;
+          break;
+        case AI_PROVIDER.QWEN:
+          model = generateDto.qwenModel || DEFAULT_QWEN_MODEL;
+          break;
+        case AI_PROVIDER.DEEPSEEK:
+          model = generateDto.deepseekModel || DEFAULT_DEEPSEEK_MODEL;
+          break;
+        case AI_PROVIDER.GROK:
+          model = generateDto.grokModel || DEFAULT_GROK_MODEL;
+          break;
+        case AI_PROVIDER.GOOGLE:
+          model = generateDto.geminiModel || DEFAULT_GEMINI_MODEL;
+          break;
+        default:
+          model = 'неизвестная';
+      }
+
+      this.logger.log(
+        `Анализ документа: провайдер=${provider}, модель=${model}, температура=${generateDto.temperature}`,
+      );
+
+      switch (provider) {
+        case AI_PROVIDER.OPENAI:
+          result = await this.generateWithOpenAI(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || 2000,
+          );
+          break;
+        case AI_PROVIDER.QWEN:
+          result = await this.generateWithQwen(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || 2000,
+          );
+          break;
+        case AI_PROVIDER.DEEPSEEK:
+          result = await this.generateWithDeepSeek(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || 2000,
+          );
+          break;
+        case AI_PROVIDER.GROK:
+          result = await this.generateWithGrok(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || 2000,
+          );
+          break;
+        default:
+          throw new Error(`Неподдерживаемый провайдер: ${provider}`);
+      }
+
+      // Очищаем результат от возможной markdown разметки
+      let cleanedResult = result.trim();
+      if (cleanedResult.startsWith('```json')) {
+        cleanedResult = cleanedResult
+          .replace(/^```json\s*/, '')
+          .replace(/\s*```$/, '');
+      }
+      if (cleanedResult.startsWith('```')) {
+        cleanedResult = cleanedResult
+          .replace(/^```\s*/, '')
+          .replace(/\s*```$/, '');
+      }
+
+      // Парсим JSON ответ
+      let parsedResult;
+      try {
+        parsedResult = JSON.parse(cleanedResult);
+        this.logger.log(
+          `Успешно распарсен JSON ответ с ${parsedResult.highlights?.length || 0} подсветками`,
+        );
+      } catch (error) {
+        this.logger.warn(`Не удалось распарсить JSON ответ: ${error.message}`);
+        // Если не удалось распарсить, возвращаем как обычный ответ
+        parsedResult = {
+          answer: cleanedResult,
+          highlights: [],
+        };
+      }
+
+      const processingTime = Date.now() - startTime;
+      this.logger.log(
+        `Анализ документа завершен за ${processingTime}мс (${provider}/${model}, подсветок: ${parsedResult.highlights?.length || 0})`,
+      );
+
+      return {
+        answer: parsedResult.answer || cleanedResult,
+        highlights: Array.isArray(parsedResult.highlights)
+          ? parsedResult.highlights
+          : [],
+        provider,
+        timestamp: new Date().toISOString(),
+        processingTime,
+      };
+    } catch (error) {
+      this.logger.error(`Ошибка при анализе документа: ${error.message}`);
+      throw new BadRequestException(`Ошибка анализа: ${error.message}`);
     }
   }
 }

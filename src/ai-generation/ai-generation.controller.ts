@@ -11,6 +11,10 @@ import { AiGenerationService } from './ai-generation.service';
 import { GenerateRequestDto, RequestExample } from './dto/generate-request.dto';
 import { GenerateResponseDto } from './dto/generate-response.dto';
 import { ChatRequestDto, ChatResponseDto } from './dto/chat-request.dto';
+import {
+  DocumentAnalysisRequestDto,
+  DocumentAnalysisResponseDto,
+} from './dto/document-analysis-request.dto';
 import { DEFAULT_AI_PROVIDER } from './constants';
 
 @ApiTags('AI Generation')
@@ -143,6 +147,101 @@ export class AiGenerationController {
       throw new HttpException(
         {
           message: 'Произошла ошибка при обработке сообщения',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('analyze-document')
+  @ApiOperation({
+    summary: 'Глубокий анализ документа с подсветкой полей',
+    description:
+      'Анализирует структурированный документ любой сложности, отвечает на вопрос пользователя и подсвечивает релевантные поля в JSON структуре.',
+  })
+  @ApiBody({
+    type: DocumentAnalysisRequestDto,
+    examples: {
+      passport: {
+        summary: 'Анализ паспорта Латвии',
+        value: {
+          question:
+            'Когда выдан документ, сколько лет владельцу и какая страна выдала паспорт?',
+          documentContext: {
+            страница: '2-3',
+            название: 'национальность - русский',
+            страна: 'ЛАТВИЯ',
+            паспорт: {
+              тип: 'PN',
+              код: 'LVA',
+              номер_паспорта: 'не указано',
+            },
+            фамилия: 'ВАДИМС',
+            имя: 'XXX',
+            дата_рождения: '09.11.1984',
+            дата_выдачи: '16.07.2015',
+            действителен_до: '15.07.2025',
+          },
+          temperature: 0.3,
+        },
+      },
+      general: {
+        summary: 'Общий вопрос о документе',
+        value: {
+          question: 'Перечисли все важные даты в этом документе',
+          documentContext: {
+            дата_рождения: '09.11.1984',
+            дата_выдачи: '16.07.2015',
+            действителен_до: '15.07.2025',
+          },
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Анализ успешно выполнен',
+    type: DocumentAnalysisResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Некорректный запрос или невалидные данные документа',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Внутренняя ошибка сервера при анализе',
+  })
+  async analyzeDocument(
+    @Body() dto: DocumentAnalysisRequestDto,
+  ): Promise<DocumentAnalysisResponseDto> {
+    try {
+      const actualProvider = dto.provider || DEFAULT_AI_PROVIDER;
+
+      this.logger.log(
+        `Запрос на анализ документа: провайдер=${actualProvider}, вопрос=${dto.question.substring(0, 100)}...`,
+      );
+
+      const result = await this.aiGenerationService.analyzeDocument(dto);
+
+      this.logger.log(
+        `Анализ документа завершен: провайдер=${actualProvider}, подсветок=${result.highlights.length}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Ошибка при анализе документа: ${error.message}`,
+        error.stack,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        {
+          message: 'Произошла ошибка при анализе документа',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
