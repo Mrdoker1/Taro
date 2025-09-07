@@ -6,6 +6,7 @@ import {
   DocumentAnalysisRequestDto,
   DocumentAnalysisResponseDto,
 } from './dto/document-analysis-request.dto';
+import { PromptTemplatesService } from '../prompt-templates/prompt-templates.service';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import {
@@ -29,7 +30,10 @@ export class AiGenerationService {
   private readonly qwenClient: OpenAI;
   private readonly googleClient: GoogleGenerativeAI;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    private readonly promptTemplatesService: PromptTemplatesService,
+  ) {
     // Инициализация DeepSeek клиента
     this.deepseekClient = new OpenAI({
       baseURL: 'https://api.deepseek.com',
@@ -598,44 +602,30 @@ export class AiGenerationService {
 
     try {
       const provider = dto.provider || DEFAULT_AI_PROVIDER;
-      this.logger.log(
-        `Начинаем анализ документа с помощью провайдера: ${provider}`,
-      );
 
-      // Специализированный промпт для анализа документов
-      const systemPrompt = `Ты - эксперт аналитик документов. Твоя задача:
-      1. Внимательно изучить предоставленную JSON структуру документа
-      2. Ответить на вопрос пользователя максимально точно и информативно
-      3. Определить какие поля в JSON использовались для формирования ответа
+      // Получаем шаблон из базы данных
+      const templateKey = dto.templateKey || 'document-analysis';
+      const template =
+        await this.promptTemplatesService.getTemplateById(templateKey);
 
-      ВАЖНЫЕ ПРАВИЛА:
-      - Анализируй документ полностью, учитывая всю структуру
-      - Отвечай развернуто и профессионально
-      - Указывай точные значения из документа
-      - Проводи вычисления если нужно (например, возраст по дате рождения)
-
-      ФОРМАТ ОТВЕТА - строго JSON:
-      {
-        "answer": "подробный профессиональный ответ на вопрос",
-        "highlights": ["путь.к.полю1", "путь.к.полю2", "поле_верхнего_уровня"]
+      if (!template || !template.prompt) {
+        throw new BadRequestException(
+          `Шаблон ${templateKey} не найден или не содержит промпт`,
+        );
       }
 
-      ПРАВИЛА для highlights:
-      - Указывай точный путь к полям через точку (например: "паспорт.тип", "дата_рождения")
-      - Включай ВСЕ поля, которые использовались для ответа
-      - Для вложенных объектов: "объект.поле"
-      - Для массивов: "массив.0.поле"
-      - Поля верхнего уровня указывай без точек: "страна", "имя"
-      - Максимум 15 полей для подсветки
+      this.logger.log(
+        `Начинаем анализ документа: провайдер=${provider}, шаблон=${templateKey}`,
+      );
 
-      Отвечай ТОЛЬКО валидным JSON без markdown разметки и комментариев.`;
-
-      const userPrompt = `СТРУКТУРА ДОКУМЕНТА (JSON):
-      ${JSON.stringify(dto.documentContext, null, 2)}
-
-      ВОПРОС ПОЛЬЗОВАТЕЛЯ: ${dto.question}
-
-      Проанализируй документ, ответь на вопрос и укажи все релевантные поля для подсветки.`;
+      // Формируем промпт из шаблона, заменяя плейсхолдеры
+      const systemPrompt = template.systemPrompt;
+      const userPrompt = template.prompt
+        .replace(
+          '{document_context}',
+          JSON.stringify(dto.documentContext, null, 2),
+        )
+        .replace('{user_question}', dto.question);
 
       let result: string;
 
@@ -643,7 +633,7 @@ export class AiGenerationService {
       const generateDto = {
         ...dto,
         prompt: userPrompt, // добавляем недостающее поле
-        temperature: dto.temperature ?? 0.3,
+        temperature: dto.temperature ?? template.temperature,
       } as GenerateRequestDto;
 
       // Определяем модель для логирования
@@ -678,7 +668,7 @@ export class AiGenerationService {
             systemPrompt,
             userPrompt,
             generateDto,
-            dto.maxTokens || 2000,
+            dto.maxTokens || template.maxTokens,
           );
           break;
         case AI_PROVIDER.QWEN:
@@ -686,7 +676,7 @@ export class AiGenerationService {
             systemPrompt,
             userPrompt,
             generateDto,
-            dto.maxTokens || 2000,
+            dto.maxTokens || template.maxTokens,
           );
           break;
         case AI_PROVIDER.DEEPSEEK:
@@ -694,7 +684,7 @@ export class AiGenerationService {
             systemPrompt,
             userPrompt,
             generateDto,
-            dto.maxTokens || 2000,
+            dto.maxTokens || template.maxTokens,
           );
           break;
         case AI_PROVIDER.GROK:
@@ -702,7 +692,7 @@ export class AiGenerationService {
             systemPrompt,
             userPrompt,
             generateDto,
-            dto.maxTokens || 2000,
+            dto.maxTokens || template.maxTokens,
           );
           break;
         default:

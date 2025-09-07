@@ -66,8 +66,17 @@ export class DocumentAnalysisRequestDto {
   provider?: AI_PROVIDER;
 
   @ApiProperty({
+    description: 'Ключ шаблона промпта (опционально, по умолчанию "document-analysis")',
+    required: false,
+    example: 'document-analysis',
+  })
+  @IsOptional()
+  @IsString()
+  templateKey?: string;
+
+  @ApiProperty({
     description:
-      'Температура генерации (0.0-2.0, по умолчанию 0.3 для точности)',
+      'Температура генерации (0.0-2.0, по умолчанию из шаблона)',
     minimum: 0,
     maximum: 2,
     required: false,
