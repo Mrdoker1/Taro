@@ -1,35 +1,46 @@
-- name: Deploy over SSH (NEW server)
-  uses: appleboy/ssh-action@v1.2.0
-  with:
-    host: ${{ secrets.DEPLOY_HOST_2 }}
-    username: admin
-    key: ${{ secrets.DEPLOY_SSH_KEY }}
-    passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # убери строку, если у ключа нет пароля
-    port: 22
-    script_stop: true
-    script: |
-      set -euo pipefail
-      APP_DIR="/srv/myapp/repo"
-      SERVICE_NAME="myapp"
+name: Deploy to AliBaba Cloud server (new)
 
-      # На всякий случай: убедимся, что каталог принадлежит myapp
-      sudo chown -R myapp:myapp "$APP_DIR"
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
-      # ВСЕ git/npm действия делаем от имени myapp (избежим dubious ownership)
-      sudo -u myapp -H bash -lc "
-        set -e
-        cd $APP_DIR
-        git fetch origin main --quiet
-        git checkout main
-        git pull --ff-only
-        if [ -f package-lock.json ]; then npm ci; else npm install; fi
-        npm run build
-        echo \"sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')\" > $APP_DIR/.deploy_info
-      "
+jobs:
+  deploy-new:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      # рестарт сервиса и проверка
-      sudo systemctl restart "$SERVICE_NAME"
-      sudo systemctl is-active "$SERVICE_NAME"
+      - name: Deploy over SSH (NEW server)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST_2 }}   # 47.245.133.217
+          username: admin                      # логинимся как admin на новом сервере
+          key: ${{ secrets.DEPLOY_SSH_KEY }}   # тот самый приватный ключ
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # удали строку, если ключ без пароля
+          port: 22
+          script_stop: true
+          script: |
+            set -euo pipefail
+            APP_DIR="/srv/myapp/repo"
+            SERVICE_NAME="myapp"
 
-      # показать, что задеплоилось
-      sudo -u myapp cat "$APP_DIR/.deploy_info"
+            # нормализуем владельца
+            sudo chown -R myapp:myapp "$APP_DIR"
+
+            # все git/npm/build от имени myapp (чтобы не было "dubious ownership")
+            sudo -u myapp -H bash -lc "
+              set -e
+              cd $APP_DIR
+              git fetch origin main --quiet
+              git checkout main
+              git pull --ff-only
+              if [ -f package-lock.json ]; then npm ci; else npm install; fi
+              npm run build
+              echo \"sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')\" > $APP_DIR/.deploy_info
+            "
+
+            sudo systemctl restart "$SERVICE_NAME"
+            sudo systemctl is-active "$SERVICE_NAME"
+            sudo -u myapp cat "$APP_DIR/.deploy_info"
