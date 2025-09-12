@@ -1,41 +1,28 @@
-name: Deploy to AliBaba Cloud server
+- name: Deploy over SSH (NEW server, systemd)
+  uses: appleboy/ssh-action@v1.2.0
+  with:
+    host: ${{ secrets.DEPLOY_HOST_2 }}   # 47.245.133.217
+    username: admin                      # <-- ЯВНО admin для нового сервера
+    key: ${{ secrets.DEPLOY_SSH_KEY }}   # тот же приватный ключ, что мы добавляли
+    passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # если есть
+    port: 22
+    script_stop: true
+    # debug: true   # включи, если нужно подробнее
+    script: |
+      set -euo pipefail
+      APP_DIR="/srv/myapp/repo"
+      SERVICE_NAME="myapp"
 
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
+      cd "$APP_DIR"
+      git fetch origin main --quiet
+      git checkout main
+      git pull --ff-only
 
-jobs:
-  deploy-new:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      sudo -u myapp -H bash -lc "cd $APP_DIR && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build"
 
-      - name: Deploy over SSH (NEW server, systemd)
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST_2 }}          # <- добавь только этот секрет
-          username: ${{ secrets.DEPLOY_USER }}        # уже существует
-          key: ${{ secrets.DEPLOY_SSH_KEY }}          # уже существует
-          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # если есть
-          port: 22
-          script_stop: true
-          script: |
-            set -euo pipefail
-            APP_DIR="/srv/myapp/repo"
-            SERVICE_NAME="myapp"
+      echo "sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | sudo -u myapp tee $APP_DIR/.deploy_info >/dev/null
 
-            cd "$APP_DIR"
-            git fetch origin main --quiet
-            git checkout main
-            git pull --ff-only
+      sudo systemctl restart "$SERVICE_NAME"
+      sudo systemctl is-active "$SERVICE_NAME"
 
-            sudo -u myapp -H bash -lc "cd $APP_DIR && if [ -f package-lock.json ]; then npm ci; else npm install; fi && npm run build"
-
-            echo "sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" | sudo -u myapp tee $APP_DIR/.deploy_info >/dev/null
-
-            sudo systemctl restart "$SERVICE_NAME"
-            sudo systemctl is-active "$SERVICE_NAME"
-
-            echo "DEPLOYED (NEW) $(sudo -u myapp cat $APP_DIR/.deploy_info)"
+      echo "DEPLOYED (NEW) $(sudo -u myapp cat $APP_DIR/.deploy_info)"
