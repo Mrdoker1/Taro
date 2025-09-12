@@ -48,7 +48,8 @@ function configureCors(app) {
 
   app.enableCors({
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true); // curl/postman и пр.
+      // Разрешаем запросы без origin (Swagger UI, curl, postman)
+      if (!origin) return callback(null, true);
 
       const allowed =
         staticOrigins.includes(origin) || vkHosts.some(re => re.test(origin));
@@ -59,7 +60,13 @@ function configureCors(app) {
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Accept',
+      'Origin',
+      'X-Requested-With',
+    ],
   });
 }
 

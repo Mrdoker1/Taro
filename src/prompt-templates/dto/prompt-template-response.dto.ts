@@ -25,4 +25,17 @@ export class PromptTemplateResponseDto {
       'Ты — профессиональный таролог. Отвечай ТОЛЬКО на вопросы о таро...',
   })
   systemPrompt: string;
+
+  @ApiProperty({
+    description: 'Пользовательский промпт с плейсхолдерами (опционально)',
+    example: 'Карта: {card_name}. Вопрос: {user_question}',
+    required: false,
+  })
+  prompt?: string;
+
+  @ApiProperty({
+    description: 'Язык ответа',
+    example: 'russian',
+  })
+  responseLang: string;
 }

@@ -57,6 +57,8 @@ export class PromptTemplatesService {
       temperature: template.temperature,
       maxTokens: template.maxTokens,
       systemPrompt: template.systemPrompt,
+      prompt: template.prompt,
+      responseLang: template.responseLang,
     };
   }
 }
