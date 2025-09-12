@@ -15,6 +15,10 @@ import {
   DocumentAnalysisRequestDto,
   DocumentAnalysisResponseDto,
 } from './dto/document-analysis-request.dto';
+import {
+  MultiDocumentAnalysisRequestDto,
+  MultiDocumentAnalysisResponseDto,
+} from './dto/multi-document-analysis-request.dto';
 import { DEFAULT_AI_PROVIDER } from './constants';
 
 @ApiTags('AI Generation')
@@ -242,6 +246,127 @@ export class AiGenerationController {
       throw new HttpException(
         {
           message: 'Произошла ошибка при анализе документа',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Post('analyze-documents')
+  @ApiOperation({
+    summary: 'Глубокий анализ нескольких документов с подсветкой полей',
+    description:
+      'Анализирует несколько структурированных документов одновременно, отвечает на вопрос пользователя и подсвечивает релевантные поля в каждом документе с указанием конкретного документа.',
+  })
+  @ApiBody({
+    type: MultiDocumentAnalysisRequestDto,
+    examples: {
+      compareDocuments: {
+        summary: 'Сравнение данных в двух документах',
+        value: {
+          question:
+            'Сравни даты рождения в паспорте и водительских правах. Есть ли несоответствия?',
+          documents: [
+            {
+              id: 'passport',
+              name: 'Паспорт гражданина Латвии',
+              context: {
+                страна: 'ЛАТВИЯ',
+                фамилия: 'ВАДИМС',
+                имя: 'XXX',
+                дата_рождения: '09.11.1984',
+                дата_выдачи: '16.07.2015',
+                действителен_до: '15.07.2025',
+              },
+            },
+            {
+              id: 'drivers_license',
+              name: 'Водительские права',
+              context: {
+                страна: 'ЛАТВИЯ',
+                фамилия: 'ВАДИМС',
+                имя: 'XXX',
+                дата_рождения: '09.11.1984',
+                дата_выдачи: '20.03.2010',
+                действителен_до: '20.03.2030',
+                категории: ['B', 'B1'],
+              },
+            },
+          ],
+          temperature: 0.3,
+        },
+      },
+      analyzeMultiple: {
+        summary: 'Общий анализ нескольких документов',
+        value: {
+          question: 'Какие важные даты есть в этих документах?',
+          documents: [
+            {
+              id: 'document_1',
+              name: 'Первый документ',
+              context: {
+                дата_выдачи: '16.07.2015',
+                действителен_до: '15.07.2025',
+              },
+            },
+            {
+              id: 'document_2',
+              name: 'Второй документ',
+              context: {
+                дата_создания: '01.01.2020',
+                срок_действия: '31.12.2025',
+              },
+            },
+          ],
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Анализ нескольких документов успешно выполнен',
+    type: MultiDocumentAnalysisResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Некорректный запрос или невалидные данные документов',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Внутренняя ошибка сервера при анализе',
+  })
+  async analyzeMultipleDocuments(
+    @Body() dto: MultiDocumentAnalysisRequestDto,
+  ): Promise<MultiDocumentAnalysisResponseDto> {
+    try {
+      const actualProvider = dto.provider || DEFAULT_AI_PROVIDER;
+
+      this.logger.log(
+        `Запрос на анализ ${dto.documents.length} документов: провайдер=${actualProvider}, документы=[${dto.documents.map(d => d.name).join(', ')}]`,
+      );
+
+      const result =
+        await this.aiGenerationService.analyzeMultipleDocuments(dto);
+
+      this.logger.log(
+        `Анализ ${dto.documents.length} документов завершен: провайдер=${actualProvider}, подсветок=${result.highlights.length}`,
+      );
+
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Ошибка при анализе документов: ${error.message}`,
+        error.stack,
+      );
+
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      throw new HttpException(
+        {
+          message: 'Произошла ошибка при анализе документов',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

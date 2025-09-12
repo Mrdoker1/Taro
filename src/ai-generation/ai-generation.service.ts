@@ -6,6 +6,11 @@ import {
   DocumentAnalysisRequestDto,
   DocumentAnalysisResponseDto,
 } from './dto/document-analysis-request.dto';
+import {
+  MultiDocumentAnalysisRequestDto,
+  MultiDocumentAnalysisResponseDto,
+  DocumentHighlightDto,
+} from './dto/multi-document-analysis-request.dto';
 import { PromptTemplatesService } from '../prompt-templates/prompt-templates.service';
 import OpenAI from 'openai';
 import { GoogleGenerativeAI } from '@google/generative-ai';
@@ -745,6 +750,188 @@ export class AiGenerationService {
     } catch (error) {
       this.logger.error(`Ошибка при анализе документа: ${error.message}`);
       throw new BadRequestException(`Ошибка анализа: ${error.message}`);
+    }
+  }
+
+  /**
+   * Глубокий анализ нескольких документов с подсветкой полей
+   */
+  async analyzeMultipleDocuments(
+    dto: MultiDocumentAnalysisRequestDto,
+  ): Promise<MultiDocumentAnalysisResponseDto> {
+    const startTime = Date.now();
+
+    try {
+      this.logger.log(
+        `Начинаем анализ ${dto.documents.length} документов: ${dto.documents.map(d => d.name).join(', ')}`,
+      );
+
+      // Получаем шаблон промпта
+      const templateKey = dto.templateKey || 'multi-document-analysis';
+      const template =
+        await this.promptTemplatesService.getTemplateById(templateKey);
+
+      if (!template || !template.prompt) {
+        throw new BadRequestException(
+          `Шаблон ${templateKey} не найден или не содержит промпт`,
+        );
+      }
+
+      // Формируем контекст всех документов
+      const documentsContext = dto.documents.map(doc => ({
+        id: doc.id,
+        name: doc.name,
+        data: doc.context,
+      }));
+
+      // Формируем промпты из шаблона, заменяя плейсхолдеры
+      const systemPrompt = template.systemPrompt;
+      const userPrompt = template.prompt
+        .replace('{documents}', JSON.stringify(documentsContext, null, 2))
+        .replace('{user_question}', dto.question)
+        .replace('{documents_count}', dto.documents.length.toString());
+
+      this.logger.log('Промпты сформированы для анализа документов');
+
+      // Определяем провайдер и модель
+      const provider = dto.provider || DEFAULT_AI_PROVIDER;
+      const generateDto = {
+        prompt: userPrompt,
+        systemPrompt,
+        provider,
+        temperature: dto.temperature || 0.3,
+        openaiModel: DEFAULT_OPENAI_MODEL,
+        geminiModel: DEFAULT_GEMINI_MODEL,
+        deepseekModel: DEFAULT_DEEPSEEK_MODEL,
+        grokModel: DEFAULT_GROK_MODEL,
+        qwenModel: DEFAULT_QWEN_MODEL,
+      };
+
+      let model: string;
+      switch (provider) {
+        case AI_PROVIDER.OPENAI:
+          model = generateDto.openaiModel || DEFAULT_OPENAI_MODEL;
+          break;
+        case AI_PROVIDER.QWEN:
+          model = generateDto.qwenModel || DEFAULT_QWEN_MODEL;
+          break;
+        case AI_PROVIDER.DEEPSEEK:
+          model = generateDto.deepseekModel || DEFAULT_DEEPSEEK_MODEL;
+          break;
+        case AI_PROVIDER.GROK:
+          model = generateDto.grokModel || DEFAULT_GROK_MODEL;
+          break;
+        case AI_PROVIDER.GOOGLE:
+          model = generateDto.geminiModel || DEFAULT_GEMINI_MODEL;
+          break;
+        default:
+          model = 'неизвестная';
+      }
+
+      this.logger.log(
+        `Анализ документов: провайдер=${provider}, модель=${model}, температура=${generateDto.temperature}`,
+      );
+
+      // Генерируем ответ через выбранный провайдер
+      let result: string;
+      switch (provider) {
+        case AI_PROVIDER.OPENAI:
+          result = await this.generateWithOpenAI(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || template.maxTokens,
+          );
+          break;
+        case AI_PROVIDER.QWEN:
+          result = await this.generateWithQwen(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || template.maxTokens,
+          );
+          break;
+        case AI_PROVIDER.DEEPSEEK:
+          result = await this.generateWithDeepSeek(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || template.maxTokens,
+          );
+          break;
+        case AI_PROVIDER.GROK:
+          result = await this.generateWithGrok(
+            systemPrompt,
+            userPrompt,
+            generateDto,
+            dto.maxTokens || template.maxTokens,
+          );
+          break;
+        default:
+          throw new Error(`Неподдерживаемый провайдер: ${provider}`);
+      }
+
+      // Очищаем результат от возможной markdown разметки
+      let cleanedResult = result.trim();
+      if (cleanedResult.startsWith('```json')) {
+        cleanedResult = cleanedResult
+          .replace(/^```json\s*/, '')
+          .replace(/\s*```$/, '');
+      }
+      if (cleanedResult.startsWith('```')) {
+        cleanedResult = cleanedResult
+          .replace(/^```\s*/, '')
+          .replace(/\s*```$/, '');
+      }
+
+      // Парсим JSON ответ
+      let parsedResult;
+      try {
+        parsedResult = JSON.parse(cleanedResult);
+        this.logger.log(
+          `Успешно распарсен JSON ответ с ${parsedResult.highlights?.length || 0} подсветками`,
+        );
+      } catch (error) {
+        this.logger.warn(`Не удалось распарсить JSON ответ: ${error.message}`);
+        // Если не удалось распарсить, возвращаем как обычный ответ
+        parsedResult = {
+          answer: cleanedResult,
+          highlights: [],
+        };
+      }
+
+      // Преобразуем подсветки в правильный формат
+      let highlights: DocumentHighlightDto[] = [];
+      if (Array.isArray(parsedResult.highlights)) {
+        highlights = parsedResult.highlights.map((highlight: any) => {
+          const doc = dto.documents.find(d => d.id === highlight.documentId);
+          return {
+            documentId: highlight.documentId,
+            documentName: doc?.name || 'Неизвестный документ',
+            fieldPath: highlight.fieldPath,
+            fieldValue: highlight.fieldValue,
+          };
+        });
+      }
+
+      const processingTime = Date.now() - startTime;
+      this.logger.log(
+        `Анализ ${dto.documents.length} документов завершен за ${processingTime}мс (${provider}/${model}, подсветок: ${highlights.length})`,
+      );
+
+      return {
+        answer: parsedResult.answer || cleanedResult,
+        highlights,
+        provider,
+        timestamp: new Date().toISOString(),
+        processingTime,
+        documentsCount: dto.documents.length,
+      };
+    } catch (error) {
+      this.logger.error(`Ошибка при анализе документов: ${error.message}`);
+      throw new BadRequestException(
+        `Ошибка анализа документов: ${error.message}`,
+      );
     }
   }
 }
