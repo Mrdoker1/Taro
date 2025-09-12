@@ -1,4 +1,4 @@
-name: Deploy to AliBaba Cloud server (new)
+name: Deploy to AliBaba Cloud server
 
 on:
   push:
@@ -15,10 +15,10 @@ jobs:
       - name: Deploy over SSH (NEW server)
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.DEPLOY_HOST_2 }}   # 47.245.133.217
-          username: admin                      # логинимся как admin на новом сервере
-          key: ${{ secrets.DEPLOY_SSH_KEY }}   # тот самый приватный ключ
-          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # удали строку, если ключ без пароля
+          host: ${{ secrets.DEPLOY_HOST_2 }}        # IP нового сервера
+          username: admin                           # пользователь на новом сервере
+          key: ${{ secrets.DEPLOY_SSH_KEY }}        # приватный ключ (тот же, что добавили в authorized_keys)
+          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # удалите строку, если у ключа нет пароля
           port: 22
           script_stop: true
           script: |
@@ -26,10 +26,7 @@ jobs:
             APP_DIR="/srv/myapp/repo"
             SERVICE_NAME="myapp"
 
-            # нормализуем владельца
-            sudo chown -R myapp:myapp "$APP_DIR"
-
-            # все git/npm/build от имени myapp (чтобы не было "dubious ownership")
+            # Все операции с кодом и Node — от имени myapp
             sudo -u myapp -H bash -lc "
               set -e
               cd $APP_DIR
@@ -38,9 +35,12 @@ jobs:
               git pull --ff-only
               if [ -f package-lock.json ]; then npm ci; else npm install; fi
               npm run build
-              echo \"sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')\" > $APP_DIR/.deploy_info
+              echo 'sha=${{ github.sha }} time='\"\$(date -u +'%Y-%m-%dT%H:%M:%SZ')\" > $APP_DIR/.deploy_info
             "
 
-            sudo systemctl restart "$SERVICE_NAME"
-            sudo systemctl is-active "$SERVICE_NAME"
-            sudo -u myapp cat "$APP_DIR/.deploy_info"
+            # Перезапуск сервиса и проверка статуса
+            sudo systemctl restart \"$SERVICE_NAME\"
+            sudo systemctl is-active \"$SERVICE_NAME\"
+
+            # Вывести информацию о деплое
+            echo \"DEPLOYED (NEW) \$(sudo -u myapp cat $APP_DIR/.deploy_info)\"
