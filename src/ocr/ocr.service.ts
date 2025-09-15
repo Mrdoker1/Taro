@@ -55,7 +55,7 @@ export class OcrService {
         );
       }
 
-      const systemPrompt = `Извлеки весь ВИДИМЫЙ текст с изображения и верни результат в формате JSON.`;
+      const systemPrompt = `Извлеки видимый текст с изображения. Верни JSON со структурой документа. Ключи полей на языке оригинала документа, Title Case, человекочитаемые (например, “Full Name”, “Date of Issue”).`;
 
       this.logger.log(
         `Отправляем запрос к Qwen VL API с моделью: ${DEFAULT_QWEN_VL_MODEL}`,
