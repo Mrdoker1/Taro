@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# Чтобы не налетать параллельными деплоями
 concurrency:
   group: deploy-alibaba-main
   cancel-in-progress: false
@@ -12,6 +13,7 @@ concurrency:
 jobs:
   deploy-alibaba:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,31 +21,41 @@ jobs:
       - name: Deploy over SSH (Alibaba)
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.ALI_DEPLOY_HOST }}       # 47.245.133.217
-          username: ${{ secrets.ALI_DEPLOY_USER }}    # admin
-          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}      # приватный ключ для входа на сервер
-          # Если ключ без пароля — УДАЛИ следующую строку:
+          host: ${{ secrets.ALI_DEPLOY_HOST }}       # например: 47.245.133.217
+          username: ${{ secrets.ALI_DEPLOY_USER }}    # например: admin
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}      # приватный ключ для SSH-входа на сервер
+          # ВАЖНО: если приватный ключ без пароля, просто удалите следующую строку:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           script: |
+            # строгий режим и сразу выходим при ошибке любой команды
             set -euo pipefail
 
-            # Preflight: DNS/TLS на удалённой машине
+            # --- Preflight на удалённой машине: DNS/TLS, чтобы git/npm не падали ---
             getent hosts github.com >/dev/null
             curl -sSfI https://github.com -m 10 >/dev/null
 
-            # Всё выполняем от имени myapp через heredoc — без кавычечных ловушек
-            sudo -u myapp bash -s <<REMOTE
+            # --- Запускаем всё от имени myapp. Используем heredoc, чтобы не споткнуться о кавычки ---
+            sudo -u myapp bash -s <<'REMOTE'
             set -euo pipefail
+
+            # Гарантируем наличие директории с кодом
+            mkdir -p /srv/myapp/repo
             cd /srv/myapp/repo
 
-            # Репозиторий по SSH (deploy key у myapp)
-            git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
+            # Настраиваем origin на SSH-URL (deploy key у пользователя myapp)
+            if [ ! -d .git ]; then
+              git clone git@github.com:Mrdoker1/Taro.git .
+            else
+              git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
+            fi
+
+            # Обновляем код
             git fetch origin main --quiet
             git checkout main || git checkout -b main
             git pull --ff-only
 
-            # Установка зависимостей и сборка
+            # Устанавливаем зависимости и собираем
             if [ -f package-lock.json ]; then
               npm ci
             else
@@ -51,16 +63,17 @@ jobs:
             fi
             npm run build
 
-            # Метка деплоя (ВАЖНО: без одинарных кавычек в формате даты)
-            echo "sha=${GITHUB_SHA} time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+            # Пишем метку деплоя (без одинарных кавычек в формате даты!)
+            echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
             # PM2: рестарт, иначе старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
               pm2 restart myapp-api --update-env
             else
+              # если у тебя другой старт-скрипт, поменяй команду ниже
               pm2 start "npm -- start" --name myapp-api --time
             fi
 
             pm2 save
-            echo "ALIBABA DEPLOYED \$(cat .deploy_info)"
-REMOTE
+            echo "ALIBABA DEPLOYED $(cat .deploy_info)"
+            REMOTE
