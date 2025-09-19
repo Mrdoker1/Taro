@@ -5,6 +5,7 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+# чтобы не было параллельных накладок деплоев
 concurrency:
   group: deploy-alibaba-artifact
   cancel-in-progress: false
@@ -33,23 +34,22 @@ jobs:
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
           cp -r dist package.json package-lock.json deploy_artifact/
-          # Если хочешь деплоить .env из репозитория — раскомментируй:
+          # Если нужно передавать .env из репозитория — раскомментируй:
           # cp -r .env* deploy_artifact/ 2>/dev/null || true
 
       - name: Copy artifact to server (as files, not as .tgz)
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.ALI_DEPLOY_HOST }}
-          username: ${{ secrets.ALI_DEPLOY_USER }}
-          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если SSH-ключ без пароля — удалите строку ниже:
+          host: ${{ secrets.ALI_DEPLOY_HOST }}        # IP Alibaba сервера, напр. 47.245.133.217
+          username: ${{ secrets.ALI_DEPLOY_USER }}     # пользователь SSH, напр. admin
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}       # ПРИВАТНЫЙ ключ для входа на сервер
+          # Если SSH-ключ без пароля — удалите следующую строку:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          # Передаём ИМЕННО СОДЕРЖИМОЕ каталога — тогда scp-action корректно распакует файлы
+          # Передаём содержимое каталога, scp-action сам упакует/распакует
           source: "deploy_artifact/*"
           target: "/tmp/deploy_artifact"
-          # Можно включить rm=true, чтобы чистить target перед раскладкой (опционально):
-          # rm: true
+          rm: true   # очистить target перед доставкой (устраняет старый мусор)
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -57,14 +57,14 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если SSH-ключ без пароля — удалите строку ниже:
+          # Если SSH-ключ без пароля — удалите следующую строку:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           command_timeout: 45m
           script: |
             set -euxo pipefail
 
-            # На 1ГБ RAM лучше иметь swap
+            # 1) На 1ГБ RAM лучше иметь swap (если уже есть — пропустим)
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -73,42 +73,59 @@ jobs:
               sudo swapon -a
             fi
 
-            # Разворачивание на сервере
+            # 2) Разворачиваем артефакт под пользователем myapp
             sudo -u myapp bash -s <<'REMOTE'
             set -euxo pipefail
 
             SRC="/tmp/deploy_artifact"
             DEST="/srv/myapp/repo"
 
-            # sanity-check: на случай, если scp-action принёс не то
-            test -f "$SRC/package.json"
-            test -d "$SRC/dist"
+            echo "== ls -la \$SRC =="
+            ls -la "\$SRC" || true
+            command -v tree >/dev/null 2>&1 && tree -L 2 "\$SRC" || true
 
-            mkdir -p "$DEST"
-            cd "$DEST"
+            # Находим, где именно лежит package.json (scp-action может создать подкаталог)
+            if [ -f "\$SRC/package.json" ]; then
+              SRC_USE="\$SRC"
+            else
+              SRC_USE="$(find "\$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
+              if [ -z "\$SRC_USE" ]; then
+                echo "package.json не найден в \$SRC (или на глубине 2). Содержимое:"
+                find "\$SRC" -maxdepth 2 -print
+                exit 1
+              fi
+            fi
 
-            # Бэкап предыдущей версии (по желанию)
+            echo "Используем источник: \$SRC_USE"
+
+            # Готовим директорию назначения
+            mkdir -p "\$DEST"
+            cd "\$DEST"
+
+            # 3) Бэкап предыдущей версии
             mkdir -p ../releases
             ts="$(date -u +%Y%m%d%H%M%S)"
             if [ -d dist ] || [ -f package.json ]; then
-              tar -czf ../releases/backup-$ts.tgz dist package*.json .env* 2>/dev/null || true
+              tar -czf "../releases/backup-\$ts.tgz" dist package*.json .env* 2>/dev/null || true
             fi
 
-            # Если хочешь сохранять .env на сервере — исключай их:
-            # rsync -a --delete --exclude '.env*' "$SRC"/ "$DEST"/
-            # Если .env должны приехать из артефакта — оставь так:
-            rsync -a --delete "$SRC"/ "$DEST"/
+            # 4) Перекладываем файлы из найденного каталога
+            # Если хочешь сохранять серверные .env, исключай их:
+            # rsync -a --delete --exclude '.env*' "\$SRC_USE"/ "\$DEST"/
+            # Если .env должны приехать из артефакта — оставь без exclude:
+            rsync -a --delete "\$SRC_USE"/ "\$DEST"/
 
-            # Прод-зависимости (если нужны для runtime скриптов)
+            # 5) Прод-зависимости (если нужны для runtime)
             if [ -f package-lock.json ]; then
               npm ci --omit=dev --no-audit --no-fund
             else
               npm install --omit=dev --no-audit --no-fund
             fi
 
+            # 6) Метка деплоя
             echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
-            # PM2: рестарт/старт
+            # 7) PM2: рестарт/старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
               pm2 restart myapp-api --update-env
             else
