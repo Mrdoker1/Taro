@@ -29,15 +29,14 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-          # Собираем минимальный артефакт
+          # Собираем минимальный артефакт для рантайма
+          rm -rf deploy_artifact
           mkdir -p deploy_artifact
           cp -r dist package.json package-lock.json deploy_artifact/
-          # Если хочешь деплоить .env из репозитория — раскомментируй строку ниже:
+          # Если хочешь деплоить .env из репозитория — раскомментируй:
           # cp -r .env* deploy_artifact/ 2>/dev/null || true
 
-          tar -C deploy_artifact -czf artifact.tgz .
-
-      - name: Copy artifact to server
+      - name: Copy artifact to server (as files, not as .tgz)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
@@ -46,9 +45,11 @@ jobs:
           # Если SSH-ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          source: "artifact.tgz"
-          # ВАЖНО: target — это ПАПКА, scp-action сам распакует туда архив
+          # Передаём ИМЕННО СОДЕРЖИМОЕ каталога — тогда scp-action корректно распакует файлы
+          source: "deploy_artifact/*"
           target: "/tmp/deploy_artifact"
+          # Можно включить rm=true, чтобы чистить target перед раскладкой (опционально):
+          # rm: true
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -63,7 +64,7 @@ jobs:
           script: |
             set -euxo pipefail
 
-            # На всякий пожарный — swap (сервер с 1ГБ RAM)
+            # На 1ГБ RAM лучше иметь swap
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -72,30 +73,33 @@ jobs:
               sudo swapon -a
             fi
 
-            # Разворачиваем артефакт (уже распакован scp-action в /tmp/deploy_artifact)
+            # Разворачивание на сервере
             sudo -u myapp bash -s <<'REMOTE'
             set -euxo pipefail
 
             SRC="/tmp/deploy_artifact"
             DEST="/srv/myapp/repo"
+
+            # sanity-check: на случай, если scp-action принёс не то
+            test -f "$SRC/package.json"
+            test -d "$SRC/dist"
+
             mkdir -p "$DEST"
             cd "$DEST"
 
-            # Бэкап предыдущей версии
+            # Бэкап предыдущей версии (по желанию)
             mkdir -p ../releases
             ts="$(date -u +%Y%m%d%H%M%S)"
             if [ -d dist ] || [ -f package.json ]; then
               tar -czf ../releases/backup-$ts.tgz dist package*.json .env* 2>/dev/null || true
             fi
 
-            # Если хочешь СОХРАНЯТЬ серверные .env (и не перетирать тем, что в артефакте),
-            # то исключи их при rsync:
+            # Если хочешь сохранять .env на сервере — исключай их:
             # rsync -a --delete --exclude '.env*' "$SRC"/ "$DEST"/
-            #
-            # Если хочешь ПЕРЕЗАЛИВАТЬ .env из артефакта, то так:
+            # Если .env должны приехать из артефакта — оставь так:
             rsync -a --delete "$SRC"/ "$DEST"/
 
-            # Прод-зависимости для рантайма (если нужны)
+            # Прод-зависимости (если нужны для runtime скриптов)
             if [ -f package-lock.json ]; then
               npm ci --omit=dev --no-audit --no-fund
             else
