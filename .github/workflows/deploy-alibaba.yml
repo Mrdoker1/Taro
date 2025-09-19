@@ -28,10 +28,13 @@ jobs:
           set -euxo pipefail
           npm ci --no-audit --no-fund
           npm run build
-          # собрать минимальный артефакт
+
+          # Собираем минимальный артефакт
           mkdir -p deploy_artifact
-          cp -r package*.json .env* dist deploy_artifact/ 2>/dev/null || true
-          # если нужны статические файлы/папки — добавь сюда
+          cp -r dist package.json package-lock.json deploy_artifact/
+          # Если хочешь деплоить .env из репозитория — раскомментируй строку ниже:
+          # cp -r .env* deploy_artifact/ 2>/dev/null || true
+
           tar -C deploy_artifact -czf artifact.tgz .
 
       - name: Copy artifact to server
@@ -40,10 +43,12 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # если ключ без пароля — уберите строку ниже:
+          # Если SSH-ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
+          port: 22
           source: "artifact.tgz"
-          target: "/tmp/artifact.tgz"
+          # ВАЖНО: target — это ПАПКА, scp-action сам распакует туда архив
+          target: "/tmp/deploy_artifact"
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -51,12 +56,14 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # если ключ без пароля — уберите строку ниже:
+          # Если SSH-ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
+          command_timeout: 45m
           script: |
             set -euxo pipefail
-            # swap на всякий случай, но npm тут почти не нужен
+
+            # На всякий пожарный — swap (сервер с 1ГБ RAM)
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -65,23 +72,30 @@ jobs:
               sudo swapon -a
             fi
 
-            # Разворачиваем артефакт в рабочую директорию и обновляем зависимости для runtime
+            # Разворачиваем артефакт (уже распакован scp-action в /tmp/deploy_artifact)
             sudo -u myapp bash -s <<'REMOTE'
             set -euxo pipefail
-            mkdir -p /srv/myapp/repo
-            cd /srv/myapp/repo
 
-            # резервная копия предыдущей версии (по желанию)
+            SRC="/tmp/deploy_artifact"
+            DEST="/srv/myapp/repo"
+            mkdir -p "$DEST"
+            cd "$DEST"
+
+            # Бэкап предыдущей версии
             mkdir -p ../releases
             ts="$(date -u +%Y%m%d%H%M%S)"
-            if [ -d dist ]; then
+            if [ -d dist ] || [ -f package.json ]; then
               tar -czf ../releases/backup-$ts.tgz dist package*.json .env* 2>/dev/null || true
             fi
 
-            # распаковываем новый артефакт
-            tar -xzf /tmp/artifact.tgz -C .
+            # Если хочешь СОХРАНЯТЬ серверные .env (и не перетирать тем, что в артефакте),
+            # то исключи их при rsync:
+            # rsync -a --delete --exclude '.env*' "$SRC"/ "$DEST"/
+            #
+            # Если хочешь ПЕРЕЗАЛИВАТЬ .env из артефакта, то так:
+            rsync -a --delete "$SRC"/ "$DEST"/
 
-            # ставим только prod-зависимости, если нужны (чаще всего на Nest в dist уже всё готово)
+            # Прод-зависимости для рантайма (если нужны)
             if [ -f package-lock.json ]; then
               npm ci --omit=dev --no-audit --no-fund
             else
@@ -90,11 +104,13 @@ jobs:
 
             echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
+            # PM2: рестарт/старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
               pm2 restart myapp-api --update-env
             else
               pm2 start "npm -- start" --name myapp-api --time
             fi
             pm2 save
+
             echo "ALIBABA ARTIFACT DEPLOYED $(cat .deploy_info)"
             REMOTE
