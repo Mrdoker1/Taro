@@ -48,7 +48,7 @@ jobs:
               npm run build
 
               # Метка деплоя
-              echo "sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > .deploy_info
+              echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
               # PM2: рестарт, иначе старт
               if pm2 describe myapp-api >/dev/null 2>&1; then
