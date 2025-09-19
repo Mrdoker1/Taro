@@ -11,6 +11,7 @@ import { SpreadsModule } from './spreads/spreads.module';
 import { PromptTemplatesModule } from './prompt-templates/prompt-templates.module';
 import { HoroscopeModule } from './horoscope/horoscope.module';
 import { OcrModule } from './ocr/ocr.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   controllers: [HealthController],
@@ -24,6 +25,7 @@ import { OcrModule } from './ocr/ocr.module';
     PromptTemplatesModule,
     HoroscopeModule,
     OcrModule,
+    PaymentsModule,
   ],
   providers: [HealthService],
 })

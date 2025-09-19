@@ -48,8 +48,18 @@ function configureCors(app) {
 
   app.enableCors({
     origin: (origin, callback) => {
-      // Разрешаем запросы без origin (Swagger UI, curl, postman)
+      // Разрешаем запросы без origin (Swagger UI, curl, postman, мобильные приложения)
       if (!origin) return callback(null, true);
+
+      // В режиме разработки разрешаем все localhost запросы
+      if (
+        process.env.NODE_ENV !== 'production' &&
+        (origin.includes('localhost') ||
+          origin.includes('127.0.0.1') ||
+          origin.includes('10.0.2.2'))
+      ) {
+        return callback(null, true);
+      }
 
       const allowed =
         staticOrigins.includes(origin) || vkHosts.some(re => re.test(origin));
