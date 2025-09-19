@@ -1,4 +1,4 @@
-name: Deploy to Alibaba
+name: Deploy to Alibaba (artifact)
 
 on:
   push:
@@ -6,34 +6,57 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-alibaba-main
+  group: deploy-alibaba-artifact
   cancel-in-progress: false
 
 jobs:
-  deploy-alibaba:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Deploy over SSH (Alibaba)
+      - name: Use Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install & Build on runner
+        run: |
+          set -euxo pipefail
+          npm ci --no-audit --no-fund
+          npm run build
+          # собрать минимальный артефакт
+          mkdir -p deploy_artifact
+          cp -r package*.json .env* dist deploy_artifact/ 2>/dev/null || true
+          # если нужны статические файлы/папки — добавь сюда
+          tar -C deploy_artifact -czf artifact.tgz .
+
+      - name: Copy artifact to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.ALI_DEPLOY_HOST }}
+          username: ${{ secrets.ALI_DEPLOY_USER }}
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
+          # если ключ без пароля — уберите строку ниже:
+          passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
+          source: "artifact.tgz"
+          target: "/tmp/artifact.tgz"
+
+      - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.ALI_DEPLOY_HOST }}       # напр. 47.245.133.217
-          username: ${{ secrets.ALI_DEPLOY_USER }}    # напр. admin
-          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}      # приватный ключ для входа на сервер
-          # Если ключ без пароля — удалите следующую строку:
+          host: ${{ secrets.ALI_DEPLOY_HOST }}
+          username: ${{ secrets.ALI_DEPLOY_USER }}
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
+          # если ключ без пароля — уберите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          command_timeout: 60m
           script: |
             set -euxo pipefail
-            echo "[$(date -u +%H:%M:%S)] preflight DNS/TLS"
-            getent hosts github.com >/dev/null
-            curl -sSfI https://github.com -m 10 >/dev/null
-
-            echo "[$(date -u +%H:%M:%S)] ensure swap (2G) — helps npm build on 1GB RAM"
+            # swap на всякий случай, но npm тут почти не нужен
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -41,51 +64,37 @@ jobs:
               echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
               sudo swapon -a
             fi
-            free -h || true
 
-            echo "[$(date -u +%H:%M:%S)] run app deploy as myapp"
+            # Разворачиваем артефакт в рабочую директорию и обновляем зависимости для runtime
             sudo -u myapp bash -s <<'REMOTE'
             set -euxo pipefail
-            echo "[$(date -u +%H:%M:%S)] cd repo"
             mkdir -p /srv/myapp/repo
             cd /srv/myapp/repo
 
-            echo "[$(date -u +%H:%M:%S)] git sync"
-            if [ ! -d .git ]; then
-              git clone git@github.com:Mrdoker1/Taro.git .
-            else
-              git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
+            # резервная копия предыдущей версии (по желанию)
+            mkdir -p ../releases
+            ts="$(date -u +%Y%m%d%H%M%S)"
+            if [ -d dist ]; then
+              tar -czf ../releases/backup-$ts.tgz dist package*.json .env* 2>/dev/null || true
             fi
-            git fetch origin main --quiet
-            git checkout main || git checkout -b main
-            git pull --ff-only
 
-            echo "[$(date -u +%H:%M:%S)] npm config for low-RAM"
-            npm config set fund false
-            npm config set audit false
-            export NODE_OPTIONS="--max-old-space-size=256"
-            export npm_config_jobs=2
+            # распаковываем новый артефакт
+            tar -xzf /tmp/artifact.tgz -C .
 
-            echo "[$(date -u +%H:%M:%S)] npm ci / install"
+            # ставим только prod-зависимости, если нужны (чаще всего на Nest в dist уже всё готово)
             if [ -f package-lock.json ]; then
-              time npm ci --no-audit --no-fund
+              npm ci --omit=dev --no-audit --no-fund
             else
-              time npm install --no-audit --no-fund
+              npm install --omit=dev --no-audit --no-fund
             fi
 
-            echo "[$(date -u +%H:%M:%S)] npm run build"
-            time npm run build
-
-            echo "[$(date -u +%H:%M:%S)] write deploy stamp"
             echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
-            echo "[$(date -u +%H:%M:%S)] pm2 restart/start"
             if pm2 describe myapp-api >/dev/null 2>&1; then
               pm2 restart myapp-api --update-env
             else
               pm2 start "npm -- start" --name myapp-api --time
             fi
             pm2 save
-
-            echo "[$(date -u +%H:%M:%S)] done: $(cat .deploy_info)"
+            echo "ALIBABA ARTIFACT DEPLOYED $(cat .deploy_info)"
             REMOTE
