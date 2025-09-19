@@ -20,38 +20,47 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.ALI_DEPLOY_HOST }}       # 47.245.133.217
-          username: ${{ secrets.ALI_DEPLOY_USER }}    # admin (или кто у тебя)
+          username: ${{ secrets.ALI_DEPLOY_USER }}    # admin
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}      # приватный ключ для входа на сервер
-          passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }} # если нет пароля — удали строку
+          # Если ключ без пароля — УДАЛИ следующую строку:
+          passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           script: |
             set -euo pipefail
 
-            # Preflight: DNS/TLS
-            getent hosts github.com >/dev/null || { echo "DNS broken on Alibaba host"; exit 1; }
+            # Preflight: DNS/TLS на удалённой машине
+            getent hosts github.com >/dev/null
             curl -sSfI https://github.com -m 10 >/dev/null
 
-            # Весь деплой делаем под пользователем myapp
-            sudo -u myapp bash -lc '
-              set -euo pipefail
-              cd /srv/myapp/repo
+            # Всё выполняем от имени myapp через heredoc — без кавычечных ловушек
+            sudo -u myapp bash -s <<REMOTE
+            set -euo pipefail
+            cd /srv/myapp/repo
 
-              # Репозиторий по SSH (deploy key на сервере в /srv/myapp/.ssh/id_ed25519)
-              git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
+            # Репозиторий по SSH (deploy key у myapp)
+            git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
+            git fetch origin main --quiet
+            git checkout main || git checkout -b main
+            git pull --ff-only
 
-              git fetch origin main --quiet
-              git checkout main
-              git pull --ff-only
+            # Установка зависимостей и сборка
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install --no-audit --no-fund
+            fi
+            npm run build
 
-              # Установка зависимостей и сборка
-              if [ -f package-lock.json ]; then npm ci; else npm install --no-audit --no-fund; fi
-              npm run build
+            # Метка деплоя (ВАЖНО: без одинарных кавычек в формате даты)
+            echo "sha=${GITHUB_SHA} time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
-              # Метка деплоя
-              echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+            # PM2: рестарт, иначе старт
+            if pm2 describe myapp-api >/dev/null 2>&1; then
+              pm2 restart myapp-api --update-env
+            else
+              pm2 start "npm -- start" --name myapp-api --time
+            fi
 
-              # PM2: рестарт, иначе старт
-              if pm2 describe myapp-api >/dev/null 2>&1; then
-                pm2 restart myapp-api --update-env
-              else
-                pm2 start "npm --
+            pm2 save
+            echo "ALIBABA DEPLOYED \$(cat .deploy_info)"
+REMOTE
