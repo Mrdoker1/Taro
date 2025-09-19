@@ -1,34 +1,41 @@
-name: Deploy to TimeWeb server
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Deploy over SSH
+        name: Deploy over SSH (Alibaba)
         uses: appleboy/ssh-action@v1.2.0
         with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          passphrase: ${{ secrets.DEPLOY_SSH_PASSPHRASE }} # <- если нет пароля у ключа, удали эту строку
+          host: ${{ secrets.ALI_DEPLOY_HOST }}
+          username: ${{ secrets.ALI_DEPLOY_USER }}
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
+          passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           script: |
-            set -e
-            cd /opt/app
+            set -euo pipefail
+            getent hosts github.com >/dev/null
+            curl -sSfI https://github.com -m 10 >/dev/null
+
+            sudo -u myapp bash -s <<'REMOTE'
+            set -euo pipefail
+            cd /srv/myapp/repo
+            git remote set-url origin git@github.com:Mrdoker1/Taro.git || true
             git fetch origin main --quiet
-            git checkout main
+            git checkout main || git checkout -b main
             git pull --ff-only
-            npm ci
+
+            if [ -f package-lock.json ]; then
+              npm ci
+            else
+              npm install --no-audit --no-fund
+            fi
             npm run build
-            echo "sha=${GITHUB_SHA} time=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" > .deploy_info
-            pm2 restart taro-api --update-env
+
+            # Create .deploy_info file with deployment metadata (commit SHA and UTC timestamp)
+            # Used for tracking deployed version and deployment time
+            echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+
+            if pm2 describe myapp-api >/dev/null 2>&1; then
+              pm2 restart myapp-api --update-env
+            else
+              pm2 start "npm start" --name myapp-api --time
+            fi
+
             pm2 save
-            echo "DEPLOYED $(cat .deploy_info)"
+            echo "ALIBABA DEPLOYED $(cat .deploy_info)"
+            REMOTE
