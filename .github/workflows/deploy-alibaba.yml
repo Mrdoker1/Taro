@@ -5,7 +5,6 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
-# чтобы не было параллельных накладок деплоев
 concurrency:
   group: deploy-alibaba-artifact
   cancel-in-progress: false
@@ -34,22 +33,21 @@ jobs:
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
           cp -r dist package.json package-lock.json deploy_artifact/
-          # Если нужно передавать .env из репозитория — раскомментируй:
+          # Если нужно передавать .env из репо — раскомментируй:
           # cp -r .env* deploy_artifact/ 2>/dev/null || true
 
       - name: Copy artifact to server (as files, not as .tgz)
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.ALI_DEPLOY_HOST }}        # IP Alibaba сервера, напр. 47.245.133.217
-          username: ${{ secrets.ALI_DEPLOY_USER }}     # пользователь SSH, напр. admin
-          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}       # ПРИВАТНЫЙ ключ для входа на сервер
-          # Если SSH-ключ без пароля — удалите следующую строку:
+          host: ${{ secrets.ALI_DEPLOY_HOST }}
+          username: ${{ secrets.ALI_DEPLOY_USER }}
+          key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
+          # Если ключ без пароля — удали строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          # Передаём содержимое каталога, scp-action сам упакует/распакует
-          source: "deploy_artifact/*"
+          source: "deploy_artifact/*"   # <— передаём содержимое каталога
           target: "/tmp/deploy_artifact"
-          rm: true   # очистить target перед доставкой (устраняет старый мусор)
+          rm: true                     # <— очищаем target на сервере
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -57,14 +55,14 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если SSH-ключ без пароля — удалите следующую строку:
+          # Если ключ без пароля — удали строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           command_timeout: 45m
           script: |
             set -euxo pipefail
 
-            # 1) На 1ГБ RAM лучше иметь swap (если уже есть — пропустим)
+            # 1) swap для слабого инстанса
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -73,29 +71,31 @@ jobs:
               sudo swapon -a
             fi
 
-            # 2) Разворачиваем артефакт под пользователем myapp
-            sudo -u myapp bash -s <<'REMOTE'
+            # 2) Разворачиваем артефакт как myapp; пробрасываем GITHUB_SHA внутрь
+            sudo -u myapp GITHUB_SHA="${GITHUB_SHA}" bash -s <<REMOTE
             set -euxo pipefail
 
             SRC="/tmp/deploy_artifact"
             DEST="/srv/myapp/repo"
 
+            echo "== whoami: \$(whoami)"
+            echo "== ls -la /tmp =="
+            ls -la /tmp || true
             echo "== ls -la \$SRC =="
             ls -la "\$SRC" || true
             command -v tree >/dev/null 2>&1 && tree -L 2 "\$SRC" || true
 
-            # Находим, где именно лежит package.json (scp-action может создать подкаталог)
+            # Иногда scp-action создаёт вложенную папку — найдём package.json
             if [ -f "\$SRC/package.json" ]; then
               SRC_USE="\$SRC"
             else
-              SRC_USE="$(find "\$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
+              SRC_USE="\$(find "\$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
               if [ -z "\$SRC_USE" ]; then
                 echo "package.json не найден в \$SRC (или на глубине 2). Содержимое:"
                 find "\$SRC" -maxdepth 2 -print
                 exit 1
               fi
             fi
-
             echo "Используем источник: \$SRC_USE"
 
             # Готовим директорию назначения
@@ -104,15 +104,14 @@ jobs:
 
             # 3) Бэкап предыдущей версии
             mkdir -p ../releases
-            ts="$(date -u +%Y%m%d%H%M%S)"
+            ts="\$(date -u +%Y%m%d%H%M%S)"
             if [ -d dist ] || [ -f package.json ]; then
               tar -czf "../releases/backup-\$ts.tgz" dist package*.json .env* 2>/dev/null || true
             fi
 
-            # 4) Перекладываем файлы из найденного каталога
-            # Если хочешь сохранять серверные .env, исключай их:
+            # 4) Перекладываем файлы
+            # Если нужно сохранять .env на сервере — исключай их:
             # rsync -a --delete --exclude '.env*' "\$SRC_USE"/ "\$DEST"/
-            # Если .env должны приехать из артефакта — оставь без exclude:
             rsync -a --delete "\$SRC_USE"/ "\$DEST"/
 
             # 5) Прод-зависимости (если нужны для runtime)
@@ -122,8 +121,8 @@ jobs:
               npm install --omit=dev --no-audit --no-fund
             fi
 
-            # 6) Метка деплоя
-            echo "sha=${GITHUB_SHA} time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+            # 6) Метка деплоя — теперь \$GITHUB_SHA доступен (мы его пробросили)
+            echo "sha=\$GITHUB_SHA time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
             # 7) PM2: рестарт/старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
@@ -133,5 +132,5 @@ jobs:
             fi
             pm2 save
 
-            echo "ALIBABA ARTIFACT DEPLOYED $(cat .deploy_info)"
+            echo "ALIBABA ARTIFACT DEPLOYED \$(cat .deploy_info)"
             REMOTE
