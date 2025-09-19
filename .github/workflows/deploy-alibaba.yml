@@ -29,11 +29,11 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-          # Собираем минимальный артефакт для рантайма
+          # Артефакт для рантайма
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
           cp -r dist package.json package-lock.json deploy_artifact/
-          # Если нужно передавать .env из репо — раскомментируй:
+          # Если нужно передавать .env из репозитория — раскомментируй:
           # cp -r .env* deploy_artifact/ 2>/dev/null || true
 
       - name: Copy artifact to server (as files, not as .tgz)
@@ -42,12 +42,12 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если ключ без пароля — удали строку ниже:
+          # Если ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          source: "deploy_artifact/*"   # <— передаём содержимое каталога
+          source: "deploy_artifact/*"   # передаём содержимое каталога
           target: "/tmp/deploy_artifact"
-          rm: true                     # <— очищаем target на сервере
+          rm: true                     # очищаем target перед доставкой
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -55,12 +55,15 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если ключ без пароля — удали строку ниже:
+          # Если ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           command_timeout: 45m
           script: |
             set -euxo pipefail
+
+            # Локальная переменная с безопасным дефолтом — чтобы set -u не ронял скрипт
+            SHA="${GITHUB_SHA:-unknown}"
 
             # 1) swap для слабого инстанса
             if [ ! -f /swapfile ]; then
@@ -71,8 +74,8 @@ jobs:
               sudo swapon -a
             fi
 
-            # 2) Разворачиваем артефакт как myapp; пробрасываем GITHUB_SHA внутрь
-            sudo -u myapp GITHUB_SHA="${GITHUB_SHA}" bash -s <<REMOTE
+            # 2) Разворачиваем артефакт как myapp; пробрасываем SHA внутрь
+            sudo -u myapp SHA="$SHA" bash -s <<REMOTE
             set -euxo pipefail
 
             SRC="/tmp/deploy_artifact"
@@ -121,8 +124,8 @@ jobs:
               npm install --omit=dev --no-audit --no-fund
             fi
 
-            # 6) Метка деплоя — теперь \$GITHUB_SHA доступен (мы его пробросили)
-            echo "sha=\$GITHUB_SHA time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+            # 6) Метка деплоя — используем проброшенную переменную SHA
+            echo "sha=\$SHA time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
             # 7) PM2: рестарт/старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
