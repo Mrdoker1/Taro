@@ -127,7 +127,15 @@ export class PaymentsController {
 
       const result = await this.paymentsService.checkPaymentStatus(orderId);
 
+      this.logger.log('Payment status service result:', {
+        success: result.success,
+        status: result.status,
+        paid: result.paid,
+        error: result.error,
+      });
+
       if (!result.success) {
+        this.logger.warn('Payment status check failed:', result.error);
         throw new HttpException(
           {
             success: false,

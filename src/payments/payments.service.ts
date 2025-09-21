@@ -158,14 +158,37 @@ export class PaymentsService {
 
       const result = await response.json();
 
-      if (result.errorCode) {
+      this.logger.log('Raw AlfaBank response:', result);
+
+      // В AlfaBank API errorCode: '0' означает УСПЕХ, а не ошибку!
+      // Ошибкой является только errorCode !== '0'
+      if (result.errorCode && result.errorCode !== '0') {
+        const errorMessage = result.errorMessage || 'Unknown error';
+
+        // Если заказ не найден - это может быть нормально для только что созданных заказов
+        if (
+          result.errorCode === '2' || // Обычный код "заказ не найден"
+          errorMessage.toLowerCase().includes('не найден') ||
+          errorMessage.toLowerCase().includes('not found') ||
+          errorMessage.toLowerCase().includes('order not found')
+        ) {
+          this.logger.log(
+            `Order not found in AlfaBank (possibly too recent): ${errorMessage} (code: ${result.errorCode})`,
+          );
+          return {
+            success: true,
+            status: '0', // Статус "не найден" или "создается"
+            paid: false,
+          };
+        }
+
         this.logger.error(
-          `Payment status check failed: ${result.errorMessage}`,
+          `Payment status check failed: ${errorMessage} (code: ${result.errorCode})`,
           result,
         );
         return {
           success: false,
-          error: result.errorMessage || 'Unknown error',
+          error: errorMessage,
         };
       }
 
@@ -174,8 +197,15 @@ export class PaymentsService {
         result,
       );
 
-      // Статус 2 = оплачен, статус 1 = ожидает оплаты
-      const isPaid = result.orderStatus === 2;
+      // Определяем статус оплаты более точно
+      // Статус 2 = полная авторизация, но также проверяем approvedAmount
+      const hasApprovedAmount = result.paymentAmountInfo?.approvedAmount > 0;
+      const orderStatusPaid = result.orderStatus === 2;
+      const isPaid = orderStatusPaid || hasApprovedAmount;
+
+      this.logger.log(
+        `Payment analysis: orderStatus=${result.orderStatus}, approvedAmount=${result.paymentAmountInfo?.approvedAmount}, paymentState=${result.paymentAmountInfo?.paymentState}, isPaid=${isPaid}`,
+      );
 
       return {
         success: true,
