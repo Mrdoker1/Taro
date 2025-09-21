@@ -3,9 +3,9 @@ import {
   Post,
   Body,
   Get,
-  Param,
   UseGuards,
   Req,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -17,6 +17,7 @@ import {
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { createUserDtoExample, loginUserDtoExample } from './dto/examples';
 
@@ -56,21 +57,33 @@ export class AuthController {
     return await this.authService.login(loginUserDto);
   }
 
-  // Эндпоинт для подтверждения аккаунта
-  @Get('confirm/:userId')
-  @ApiOperation({ summary: 'Подтверждение аккаунта по email' })
-  @ApiResponse({ status: 200, description: 'Аккаунт успешно активирован' })
-  async confirm(@Param('userId') userId: string) {
-    return await this.authService.confirmUser(userId);
-  }
-
   // Получение данных о текущем пользователе
-  @Get('me')
+  @Get('profile')
   @UseGuards(AuthGuard('jwt')) // Защищаем эндпоинт
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Получить информацию о текущем пользователе' })
   @ApiResponse({ status: 200, description: 'Информация о пользователе' })
   async getProfile(@Req() req) {
     return await this.authService.getUserById(req.user.userId);
+  }
+
+  // Обновление подписки пользователя
+  @Patch('update-subscription')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Обновить подписку пользователя' })
+  @ApiResponse({ status: 200, description: 'Подписка успешно обновлена' })
+  @ApiBody({
+    description: 'Данные для обновления подписки',
+    type: UpdateSubscriptionDto,
+  })
+  async updateSubscription(
+    @Req() req,
+    @Body() updateSubscriptionDto: UpdateSubscriptionDto,
+  ) {
+    return await this.authService.updateUserSubscription(
+      req.user.userId,
+      updateSubscriptionDto,
+    );
   }
 }

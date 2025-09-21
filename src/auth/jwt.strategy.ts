@@ -5,8 +5,10 @@ import { ConfigService } from '@nestjs/config';
 import { Roles } from './roles';
 
 interface JwtPayload {
-  id: string;
-  role: keyof typeof Roles;
+  id?: string;
+  userId?: string;
+  role?: keyof typeof Roles;
+  email?: string;
 }
 
 @Injectable()
@@ -19,6 +21,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   validate(payload: JwtPayload) {
-    return { userId: payload.id, role: payload.role };
+    console.log('JWT payload:', payload);
+
+    // Поддерживаем оба формата токенов для совместимости
+    const userId = payload.id || payload.userId;
+    const role = payload.role || 'USER'; // Если роль не указана, используем USER по умолчанию
+
+    const user = { userId, role };
+    console.log('JWT validated user:', user);
+    return user;
   }
 }

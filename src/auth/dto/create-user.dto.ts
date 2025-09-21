@@ -36,4 +36,13 @@ export class CreateUserDto {
     message: 'Role must be either user or admin',
   })
   readonly role?: string;
+
+  @ApiProperty({
+    description: 'Тип приложения от которого регистрируется пользователь',
+    example: 'doc-scan',
+    required: false,
+  })
+  @IsString()
+  @IsOptional()
+  readonly appType?: string;
 }

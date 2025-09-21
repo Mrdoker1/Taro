@@ -26,6 +26,12 @@ export class User {
 
   @Prop({ default: false }) // По умолчанию аккаунт не активирован
   isActive: boolean;
+
+  @Prop({ required: false }) // Тип приложения от которого зарегистрирован пользователь
+  appType?: string;
+
+  @Prop({ required: false }) // Дата истечения подписки (опционально)
+  subscriptionExpiresAt?: Date;
 }
 
 export type UserDocument = User & Document;
