@@ -181,17 +181,31 @@ export class AuthService {
   // Логика авторизации
   async login(loginUserDto: LoginUserDto) {
     const { username, password } = loginUserDto;
-    const user = await this.userModel.findOne({ username });
+    this.logger.log(`Попытка входа пользователя: ${username}`);
+
+    // Ищем пользователя по username или email
+    const user = await this.userModel.findOne({
+      $or: [{ username }, { email: username }],
+    });
 
     if (!user) {
+      this.logger.warn(`Пользователь не найден: ${username}`);
       throw new UnauthorizedException('Неверное имя пользователя или пароль');
     }
 
+    this.logger.log(
+      `Пользователь найден: ${user.username} (${user.email}), проверяем пароль`,
+    );
     const passwordMatches = await this.comparePasswords(
       password,
       user.password,
     );
+
+    this.logger.log(
+      `Результат проверки пароля для ${username}: ${passwordMatches}`,
+    );
     if (!passwordMatches) {
+      this.logger.warn(`Неверный пароль для пользователя: ${username}`);
       throw new UnauthorizedException('Неверное имя пользователя или пароль');
     }
 
@@ -200,8 +214,24 @@ export class AuthService {
       role: user.role,
     });
 
-    this.logger.log(`Пользователь ${username} успешно авторизован`);
-    return { token };
+    this.logger.log(`Пользователь ${user.username} успешно авторизован`);
+
+    // Возвращаем токен и данные пользователя (без пароля)
+    const userWithoutPassword = {
+      _id: user._id,
+      username: user.username,
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: (user as any).createdAt || new Date(),
+      updatedAt: (user as any).updatedAt || new Date(),
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+    };
+
+    return {
+      token,
+      user: userWithoutPassword,
+    };
   }
 
   async getUserById(userId: string) {
@@ -240,5 +270,46 @@ export class AuthService {
 
     // Возвращаем пользователя без пароля
     return await this.userModel.findById(userId).select('-password');
+  }
+
+  // Смена пароля
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    this.logger.log(`Попытка смены пароля для пользователя ID: ${userId}`);
+
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.logger.warn(`Пользователь с ID ${userId} не найден`);
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // Проверяем текущий пароль
+    const currentPasswordMatches = await this.comparePasswords(
+      currentPassword,
+      user.password,
+    );
+
+    if (!currentPasswordMatches) {
+      this.logger.warn(
+        `Неверный текущий пароль для пользователя ${user.username}`,
+      );
+      throw new UnauthorizedException('Текущий пароль неверен');
+    }
+
+    // Хешируем новый пароль
+    const hashedNewPassword = await this.hashPassword(newPassword);
+
+    // Обновляем пароль
+    await this.userModel.findByIdAndUpdate(userId, {
+      password: hashedNewPassword,
+      updatedAt: new Date(),
+    });
+
+    this.logger.log(`Пароль для пользователя ${user.username} успешно изменен`);
+
+    return { message: 'Пароль успешно изменен' };
   }
 }

@@ -18,6 +18,7 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { createUserDtoExample, loginUserDtoExample } from './dto/examples';
 
@@ -84,6 +85,28 @@ export class AuthController {
     return await this.authService.updateUserSubscription(
       req.user.userId,
       updateSubscriptionDto,
+    );
+  }
+
+  // Смена пароля
+  @Patch('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Изменить пароль пользователя' })
+  @ApiResponse({ status: 200, description: 'Пароль успешно изменен' })
+  @ApiResponse({ status: 401, description: 'Неверный текущий пароль' })
+  @ApiBody({
+    description: 'Данные для смены пароля',
+    type: ChangePasswordDto,
+  })
+  async changePassword(
+    @Req() req,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return await this.authService.changePassword(
+      req.user.userId,
+      changePasswordDto.currentPassword,
+      changePasswordDto.newPassword,
     );
   }
 }

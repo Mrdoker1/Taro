@@ -7,7 +7,7 @@ import { Roles } from './roles';
 interface JwtPayload {
   id?: string;
   userId?: string;
-  role?: keyof typeof Roles;
+  role?: string; // Изменяем тип на string для гибкости
   email?: string;
 }
 
@@ -25,7 +25,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Поддерживаем оба формата токенов для совместимости
     const userId = payload.id || payload.userId;
-    const role = payload.role || 'USER'; // Если роль не указана, используем USER по умолчанию
+    const role = payload.role || Roles.USER; // Используем правильную константу роли
 
     const user = { userId, role };
     console.log('JWT validated user:', user);
