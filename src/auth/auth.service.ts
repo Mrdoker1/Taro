@@ -12,8 +12,9 @@ import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { MailService } from '../mail/mail.service'; // Импортируем MailService
-import { loadTemplate, validateEmailTemplate } from '../mail/template-loader'; // Import the loadTemplate and validateEmailTemplate functions
+
 import { Roles } from './roles'; // Import the roles
 
 @Injectable()
@@ -28,6 +29,16 @@ export class AuthService {
     'mail.ru',
     'yahoo.com',
     'yandex.by',
+    'yandex.ru',
+    'outlook.com',
+    'hotmail.com',
+    'icloud.com',
+    'rambler.ru',
+    'bk.ru',
+    'list.ru',
+    'inbox.ru',
+    'yandex.com',
+    'ya.ru',
   ];
 
   constructor(
@@ -58,18 +69,18 @@ export class AuthService {
 
   // Генерация JWT токена
   generateToken(user: { id: string; role: string }): string {
+    this.logger.log(
+      `Генерация токена для пользователя ID: ${user.id}, роль: ${user.role}`,
+    );
     return this.jwtService.sign({ id: user.id, role: user.role });
   }
 
   // Регистрация пользователя
   async register(createUserDto: CreateUserDto) {
-    const { username, password, role, email } = createUserDto;
+    const { username, password, role, email, appType } = createUserDto;
 
     try {
       await this.checkUser(username, email, role || Roles.USER);
-
-      // Validate email template before proceeding
-      await validateEmailTemplate('confirmation');
     } catch (error) {
       throw new ConflictException(error.message);
     }
@@ -80,9 +91,10 @@ export class AuthService {
       hashedPassword,
       role || Roles.USER,
       email,
+      appType,
     );
 
-    return this.saveUserAndSendConfirmation(newUser, username);
+    return this.saveUserWithoutEmail(newUser, username);
   }
 
   private validateRole(role: string) {
@@ -108,6 +120,7 @@ export class AuthService {
     password: string,
     role: string,
     email: string,
+    appType?: string,
   ): UserDocument {
     if (!email) {
       console.log('Email не должен быть пустым');
@@ -118,27 +131,27 @@ export class AuthService {
       password,
       role,
       email,
+      appType,
       isActive: false,
     });
   }
 
-  private async saveUserAndSendConfirmation(
-    newUser: UserDocument,
-    username: string,
-  ) {
+  private async saveUserWithoutEmail(newUser: UserDocument, username: string) {
     try {
+      newUser.isActive = true; // Автоматически активируем всех пользователей
       const savedUser: UserDocument = await newUser.save();
-      await this.mailService.sendConfirmationEmail(
-        savedUser.email,
-        (savedUser._id as any).toString(),
-      );
 
       this.logger.log(
-        `Пользователь ${username} зарегистрирован, письмо для подтверждения отправлено`,
+        `Пользователь ${username} зарегистрирован и автоматически активирован`,
       );
+
       return {
-        message:
-          'Пользователь успешно зарегистрирован. Письмо для подтверждения отправлено.',
+        message: 'Пользователь успешно зарегистрирован',
+        user: savedUser,
+        token: this.generateToken({
+          id: (savedUser._id as any).toString(),
+          role: savedUser.role,
+        }),
       };
     } catch (error) {
       this.logger.error('Error during registration', error.stack);
@@ -168,67 +181,135 @@ export class AuthService {
   // Логика авторизации
   async login(loginUserDto: LoginUserDto) {
     const { username, password } = loginUserDto;
-    const user = await this.userModel.findOne({ username });
+    this.logger.log(`Попытка входа пользователя: ${username}`);
+
+    // Ищем пользователя по username или email
+    const user = await this.userModel.findOne({
+      $or: [{ username }, { email: username }],
+    });
 
     if (!user) {
+      this.logger.warn(`Пользователь не найден: ${username}`);
       throw new UnauthorizedException('Неверное имя пользователя или пароль');
     }
 
+    this.logger.log(
+      `Пользователь найден: ${user.username} (${user.email}), проверяем пароль`,
+    );
     const passwordMatches = await this.comparePasswords(
       password,
       user.password,
     );
+
+    this.logger.log(
+      `Результат проверки пароля для ${username}: ${passwordMatches}`,
+    );
     if (!passwordMatches) {
+      this.logger.warn(`Неверный пароль для пользователя: ${username}`);
       throw new UnauthorizedException('Неверное имя пользователя или пароль');
     }
 
-    if (!user.isActive) {
-      throw new UnauthorizedException(
-        'Аккаунт не подтвержден. Пожалуйста, подтвердите email.',
-      );
-    }
-
     const token = this.generateToken({
-      id: user.id,
+      id: (user._id as any).toString(),
       role: user.role,
     });
 
-    this.logger.log(`Пользователь ${username} успешно авторизован`);
-    return { token };
-  }
+    this.logger.log(`Пользователь ${user.username} успешно авторизован`);
 
-  // Подтверждение аккаунта пользователя по ID
-  async confirmUser(userId: string): Promise<any> {
-    const user = await this.userModel.findById(userId);
-
-    if (!user) {
-      throw new UnauthorizedException('Пользователь не найден');
-    }
-
-    if (user.isActive) {
-      throw new UnauthorizedException('Аккаунт уже подтвержден');
-    }
-
-    user.isActive = true;
-    await user.save();
-
-    this.logger.log(
-      `Аккаунт пользователя ${user.username} успешно подтвержден`,
-    );
-
-    // Load the HTML template for the confirmation message
-    const html = await loadTemplate('confirmation-success', {
+    // Возвращаем токен и данные пользователя (без пароля)
+    const userWithoutPassword = {
+      _id: user._id,
       username: user.username,
-    });
+      email: user.email,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: (user as any).createdAt || new Date(),
+      updatedAt: (user as any).updatedAt || new Date(),
+      subscriptionExpiresAt: user.subscriptionExpiresAt,
+    };
 
-    return `${html}`;
+    return {
+      token,
+      user: userWithoutPassword,
+    };
   }
 
   async getUserById(userId: string) {
+    this.logger.log(`Поиск пользователя по ID: ${userId}`);
     const user = await this.userModel.findById(userId).select('-password'); // Убираем пароль из ответа
+    if (!user) {
+      this.logger.error(`Пользователь с ID ${userId} не найден`);
+      throw new NotFoundException('Пользователь не найден');
+    }
+    this.logger.log(`Пользователь найден: ${user.email}`);
+    return user;
+  }
+
+  // Обновление подписки пользователя
+  async updateUserSubscription(
+    userId: string,
+    updateSubscriptionDto: UpdateSubscriptionDto,
+  ) {
+    const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException('Пользователь не найден');
     }
-    return user;
+
+    // Обновляем дату истечения подписки
+    if (updateSubscriptionDto.subscriptionExpiresAt) {
+      user.subscriptionExpiresAt = new Date(
+        updateSubscriptionDto.subscriptionExpiresAt,
+      );
+    }
+
+    await user.save();
+
+    this.logger.log(
+      `Подписка пользователя ${user.username} обновлена до ${user.subscriptionExpiresAt?.toISOString() || 'не установлена'}`,
+    );
+
+    // Возвращаем пользователя без пароля
+    return await this.userModel.findById(userId).select('-password');
+  }
+
+  // Смена пароля
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+  ) {
+    this.logger.log(`Попытка смены пароля для пользователя ID: ${userId}`);
+
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      this.logger.warn(`Пользователь с ID ${userId} не найден`);
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // Проверяем текущий пароль
+    const currentPasswordMatches = await this.comparePasswords(
+      currentPassword,
+      user.password,
+    );
+
+    if (!currentPasswordMatches) {
+      this.logger.warn(
+        `Неверный текущий пароль для пользователя ${user.username}`,
+      );
+      throw new UnauthorizedException('Текущий пароль неверен');
+    }
+
+    // Хешируем новый пароль
+    const hashedNewPassword = await this.hashPassword(newPassword);
+
+    // Обновляем пароль
+    await this.userModel.findByIdAndUpdate(userId, {
+      password: hashedNewPassword,
+      updatedAt: new Date(),
+    });
+
+    this.logger.log(`Пароль для пользователя ${user.username} успешно изменен`);
+
+    return { message: 'Пароль успешно изменен' };
   }
 }
