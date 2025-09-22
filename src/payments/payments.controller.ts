@@ -170,4 +170,48 @@ export class PaymentsController {
       );
     }
   }
+
+  @Public()
+  @Post('webhook')
+  @ApiOperation({
+    summary: 'Webhook для уведомлений от Альфа-Банка о статусе платежа',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Уведомление успешно обработано',
+    schema: { example: { success: true } },
+  })
+  handlePaymentWebhook(@Body() body: any): { success: boolean } {
+    this.logger.log(
+      '💳 Received payment webhook:',
+      JSON.stringify(body, null, 2),
+    );
+
+    try {
+      const { orderId, mdOrder, status } = body;
+
+      if (!orderId && !mdOrder) {
+        this.logger.warn('⚠️ Webhook received without orderId or mdOrder');
+        return { success: false };
+      }
+
+      // Используем orderId или mdOrder
+      const paymentOrderId = orderId || mdOrder;
+
+      this.logger.log(
+        `🔄 Processing webhook for order: ${paymentOrderId}, status: ${status}`,
+      );
+
+      // Здесь можно добавить дополнительную логику:
+      // 1. Сохранить событие в базу данных
+      // 2. Отправить уведомление через WebSocket/SSE
+      // 3. Обновить статус заказа
+      // 4. Уведомить клиента через push-уведомления
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error('❌ Error processing payment webhook:', error);
+      return { success: false };
+    }
+  }
 }

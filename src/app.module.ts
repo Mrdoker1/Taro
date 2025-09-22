@@ -2,6 +2,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import { HealthController } from './status/health.controller';
 import { HealthService } from './status/health.service';
 import { ConfigModule } from '@nestjs/config';
@@ -12,9 +14,10 @@ import { PromptTemplatesModule } from './prompt-templates/prompt-templates.modul
 import { HoroscopeModule } from './horoscope/horoscope.module';
 import { OcrModule } from './ocr/ocr.module';
 import { PaymentsModule } from './payments/payments.module';
+import { TemplateService } from './template.service';
 
 @Module({
-  controllers: [HealthController],
+  controllers: [AppController, HealthController],
   imports: [
     ConfigModule.forRoot(),
     MongooseModule.forRoot(process.env.MONGO || 'yourSecretKey'),
@@ -27,6 +30,6 @@ import { PaymentsModule } from './payments/payments.module';
     OcrModule,
     PaymentsModule,
   ],
-  providers: [HealthService],
+  providers: [AppService, HealthService, TemplateService],
 })
 export class AppModule {}

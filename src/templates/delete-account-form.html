@@ -1,0 +1,37 @@
+<form action="https://formspree.io/f/mnngaygn" method="POST">
+    <div class="form-group">
+        <label for="email">Your Email Address *</label>
+        <input type="email" id="email" name="email" required 
+               placeholder="Enter the email associated with your account">
+    </div>
+
+    <div class="form-group">
+        <label for="reason">Reason for Deletion (Optional)</label>
+        <select id="reason" name="reason">
+            <option value="">Select a reason</option>
+            <option value="no-longer-needed">No longer need the app</option>
+            <option value="privacy-concerns">Privacy concerns</option>
+            <option value="switching-apps">Switching to another app</option>
+            <option value="technical-issues">Technical issues</option>
+            <option value="other">Other</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="additional-info">Additional Information (Optional)</label>
+        <textarea id="additional-info" name="message" 
+                 placeholder="Please provide any additional details about your deletion request..."></textarea>
+    </div>
+
+    <div class="form-group">
+        <label style="display: flex; align-items: center; gap: 8px;">
+            <input type="checkbox" name="confirmation" required style="width: auto; margin: 0;"> 
+            <span>I understand that this action is permanent and cannot be undone</span>
+        </label>
+    </div>
+
+    <input type="hidden" name="_subject" value="Smart Doc Scanner - Account Deletion Request">
+    <input type="hidden" name="_next" value="https://taro.ru/privacy/delete-account?success=true">
+    
+    <button type="submit" class="submit-btn">Send Deletion Request</button>
+</form>
