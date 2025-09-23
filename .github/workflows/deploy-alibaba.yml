@@ -29,25 +29,23 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-          # Артефакт для рантайма
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
+          # в артефакт кладём только то, что нужно в runtime
           cp -r dist package.json package-lock.json deploy_artifact/
-          # Если нужно передавать .env из репозитория — раскомментируй:
-          # cp -r .env* deploy_artifact/ 2>/dev/null || true
+          # ВАЖНО: .env НЕ кладём (он хранится на сервере)
 
-      - name: Copy artifact to server (as files, not as .tgz)
+      - name: Copy artifact to server (as files)
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          source: "deploy_artifact/*"   # передаём содержимое каталога
+          source: "deploy_artifact/*"
           target: "/tmp/deploy_artifact"
-          rm: true                     # очищаем target перед доставкой
+          rm: true
 
       - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
@@ -55,17 +53,14 @@ jobs:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
           username: ${{ secrets.ALI_DEPLOY_USER }}
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
-          # Если ключ без пароля — удалите строку ниже:
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
           command_timeout: 45m
           script: |
             set -euxo pipefail
-
-            # Локальная переменная с безопасным дефолтом — чтобы set -u не ронял скрипт
             SHA="${GITHUB_SHA:-unknown}"
 
-            # 1) swap для слабого инстанса
+            # swap (1 раз создаст, потом будет просто использоваться)
             if [ ! -f /swapfile ]; then
               sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
               sudo chmod 600 /swapfile
@@ -74,66 +69,56 @@ jobs:
               sudo swapon -a
             fi
 
-            # 2) Разворачиваем артефакт как myapp; пробрасываем SHA внутрь
-            sudo -u myapp SHA="$SHA" bash -s <<REMOTE
+            sudo -u myapp SHA="$SHA" bash -s <<'REMOTE'
             set -euxo pipefail
-
             SRC="/tmp/deploy_artifact"
             DEST="/srv/myapp/repo"
 
-            echo "== whoami: \$(whoami)"
-            echo "== ls -la /tmp =="
-            ls -la /tmp || true
-            echo "== ls -la \$SRC =="
-            ls -la "\$SRC" || true
-            command -v tree >/dev/null 2>&1 && tree -L 2 "\$SRC" || true
-
-            # Иногда scp-action создаёт вложенную папку — найдём package.json
-            if [ -f "\$SRC/package.json" ]; then
-              SRC_USE="\$SRC"
+            # найдём корень артефакта с package.json
+            if [ -f "$SRC/package.json" ]; then
+              SRC_USE="$SRC"
             else
-              SRC_USE="\$(find "\$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
-              if [ -z "\$SRC_USE" ]; then
-                echo "package.json не найден в \$SRC (или на глубине 2). Содержимое:"
-                find "\$SRC" -maxdepth 2 -print
-                exit 1
-              fi
+              SRC_USE="$(find "$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
+              [ -n "$SRC_USE" ] || { echo "package.json не найден в $SRC"; exit 1; }
             fi
-            echo "Используем источник: \$SRC_USE"
+            echo "SRC_USE=$SRC_USE"
 
-            # Готовим директорию назначения
-            mkdir -p "\$DEST"
-            cd "\$DEST"
+            mkdir -p "$DEST"
+            cd "$DEST"
 
-            # 3) Бэкап предыдущей версии
+            # резервная копия предыдущей версии
             mkdir -p ../releases
-            ts="\$(date -u +%Y%m%d%H%M%S)"
+            ts="$(date -u +%Y%m%d%H%M%S)"
             if [ -d dist ] || [ -f package.json ]; then
-              tar -czf "../releases/backup-\$ts.tgz" dist package*.json .env* 2>/dev/null || true
+              tar -czf "../releases/backup-$ts.tgz" dist package*.json .env* 2>/dev/null || true
             fi
 
-            # 4) Перекладываем файлы
-            # Если нужно сохранять .env на сервере — исключай их:
-            # rsync -a --delete --exclude '.env*' "\$SRC_USE"/ "\$DEST"/
-            rsync -a --delete "\$SRC_USE"/ "\$DEST"/
+            # ВАЖНО: .env* сохраняем, не удаляем
+            rsync -a --delete \
+              --exclude '.env*' \
+              "$SRC_USE"/ "$DEST"/
 
-            # 5) Прод-зависимости (если нужны для runtime)
+            # Проверим, что .env остался (и не пустой)
+            [ -s .env ] || { echo ".env отсутствует или пуст — прерываю деплой"; exit 1; }
+            # Подстрахуемся от CRLF
+            sed -i 's/\r$//' .env
+
+            # ставим прод-зависимости
             if [ -f package-lock.json ]; then
               npm ci --omit=dev --no-audit --no-fund
             else
               npm install --omit=dev --no-audit --no-fund
             fi
 
-            # 6) Метка деплоя — используем проброшенную переменную SHA
-            echo "sha=\$SHA time=\$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
+            echo "sha=$SHA time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
-            # 7) PM2: рестарт/старт
             if pm2 describe myapp-api >/dev/null 2>&1; then
               pm2 restart myapp-api --update-env
             else
-              pm2 start "npm -- start" --name myapp-api --time
+              # Явно стартуем dist/main.js, чтобы не зависеть от npm scripts
+              pm2 start /usr/bin/node --name myapp-api --time -- dist/main.js
             fi
             pm2 save
 
-            echo "ALIBABA ARTIFACT DEPLOYED \$(cat .deploy_info)"
+            echo "ALIBABA ARTIFACT DEPLOYED $(cat .deploy_info)"
             REMOTE
