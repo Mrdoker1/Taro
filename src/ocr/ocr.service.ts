@@ -1,7 +1,11 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { DEFAULT_QWEN_VL_MODEL } from '../ai-generation/constants';
 import OpenAI from 'openai';
+
+// Константы моделей Qwen VL
+const QWEN_VL_MODELS = {
+  LARGE: 'qwen-vl-max', // Доступная модель с большим контекстом
+};
 
 @Injectable()
 export class OcrService {
@@ -23,6 +27,11 @@ export class OcrService {
     const startTime = Date.now();
 
     try {
+      // Используем большую модель по умолчанию для всех документов
+      const model = QWEN_VL_MODELS.LARGE;
+      const maxTokens = 8000; // Максимум для qwen-vl-max
+
+      this.logger.log(`Используем модель: ${model} с max_tokens: ${maxTokens}`);
       this.logger.log('Начинаем распознавание текста с помощью Qwen VL');
 
       let imageSource: string;
@@ -55,27 +64,21 @@ export class OcrService {
         );
       }
 
-      const systemPrompt = `Проанализируй изображение и извлеки видимый текст.
-      ВАЖНО: ВСЕГДА отвечай ТОЛЬКО валидным JSON объектом, без дополнительных объяснений.
-      Если на изображении ЕСТЬ текст/документ:
-      - Верни JSON со структурой документа
-      - Ключи полей на языке оригинала документа, Title Case, человекочитаемые
-      - Пример: {"Document Type": "Passport", "Full Name": "John Smith", "Date": "2023-01-01"}
-      Если на изображении НЕТ текста или текст нечитаемый:
-      - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"}
-      Если изображение повреждено или неясное:
-      - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое или поврежденное для распознавания"}
-      Если документ содержит слишком много текста (более 2-3 страниц):
-      - Верни: {"error": "document_too_large", "message": "Документ содержит слишком много текста. Попробуйте разделить его на несколько частей"}
-      НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
-      this.logger.log(
-        `Отправляем запрос к Qwen VL API с моделью: ${DEFAULT_QWEN_VL_MODEL}`,
-      );
+      const systemPrompt = `
+      Ты — детерминированный извлекатель текста из изображений (OCR post-processor). 
+      Твоя задача — распознать ВЕСЬ доступный текст и вернуть СТРОГО один валидный JSON-объект по схеме ниже. 
+
+      Требования:
+      - Ключи — человекочитаемые
+      - Учитывай структуру документа
+
+      Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
+      this.logger.log(`Отправляем запрос к Qwen VL API с моделью: ${model}`);
       this.logger.log(`Тип источника изображения: ${file ? 'файл' : 'URL'}`);
 
       const response = await this.qwenClient.chat.completions.create(
         {
-          model: DEFAULT_QWEN_VL_MODEL,
+          model: model,
           messages: [
             {
               role: 'user',
@@ -93,10 +96,11 @@ export class OcrService {
               ],
             },
           ],
-          max_tokens: 8000,
+          max_tokens: maxTokens,
+          temperature: 0.1,
         },
         {
-          timeout: 60000, // 30 секунд тайм-аут
+          timeout: 60000, // Увеличиваем тайм-аут для больших документов
         },
       );
 
