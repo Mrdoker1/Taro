@@ -28,7 +28,44 @@ export class OcrController {
   constructor(private readonly ocrService: OcrService) {}
 
   @Post('recognize')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: {
+        fileSize: 30 * 1024 * 1024, // 30MB для фото с телефонов
+      },
+      fileFilter: (req, file, callback) => {
+        // Поддерживаем основные форматы изображений с телефонов
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+          'image/heic', // iPhone формат
+          'image/heif', // современный формат
+        ];
+
+        const mimeType = file.mimetype?.toLowerCase();
+        const fileName = file.originalname?.toLowerCase() || '';
+
+        // Проверяем и по MIME и по расширению файла
+        const isValidMime = mimeType && allowedMimeTypes.includes(mimeType);
+        const isValidExtension = fileName.match(
+          /\.(jpg|jpeg|png|webp|heic|heif)$/i,
+        );
+
+        if (!isValidMime && !isValidExtension) {
+          return callback(
+            new Error(
+              'Поддерживаются только изображения: JPEG, PNG, WebP, HEIC/HEIF',
+            ),
+            false,
+          );
+        }
+
+        callback(null, true);
+      },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Распознавание текста на изображении',

@@ -41,19 +41,49 @@ export class OcrService {
           `Обрабатываем загруженный файл: ${file.originalname}, размер: ${file.size} байт`,
         );
 
-        // Проверяем размер файла (максимум 10MB)
-        if (file.size > 10 * 1024 * 1024) {
+        // Проверяем размер файла (максимум 30MB для фото с телефонов)
+        if (file.size > 30 * 1024 * 1024) {
           throw new BadRequestException(
-            'Файл слишком большой. Максимальный размер: 10MB',
+            'Файл слишком большой. Максимальный размер: 30MB',
           );
         }
 
-        // Конвертируем файл в base64 для Qwen VL
-        const base64Data = file.buffer.toString('base64');
-        imageSource = `data:image/jpeg;base64,${base64Data}`;
+        // Поддерживаем основные форматы изображений с телефонов
+        const supportedMimeTypes = [
+          'image/jpeg',
+          'image/jpg',
+          'image/png',
+          'image/webp',
+          'image/heic', // iPhone формат
+          'image/heif', // современный формат
+        ];
+
+        const mimeType = file.mimetype?.toLowerCase();
+        if (!mimeType || !supportedMimeTypes.includes(mimeType)) {
+          // Определяем по расширению если MIME неточный
+          const fileName = file.originalname?.toLowerCase() || '';
+          let detectedMime = 'image/jpeg'; // по умолчанию
+
+          if (fileName.includes('.png')) detectedMime = 'image/png';
+          else if (fileName.includes('.webp')) detectedMime = 'image/webp';
+          else if (fileName.includes('.heic')) detectedMime = 'image/heic';
+          else if (fileName.includes('.heif')) detectedMime = 'image/heif';
+
+          this.logger.warn(
+            `MIME тип неопределен (${mimeType}), используем: ${detectedMime}`,
+          );
+
+          // Конвертируем файл в base64 для Qwen VL
+          const base64Data = file.buffer.toString('base64');
+          imageSource = `data:${detectedMime};base64,${base64Data}`;
+        } else {
+          // Конвертируем файл в base64 для Qwen VL
+          const base64Data = file.buffer.toString('base64');
+          imageSource = `data:${mimeType};base64,${base64Data}`;
+        }
 
         this.logger.log(
-          `Файл конвертирован в base64, длина: ${base64Data.length} символов`,
+          `Файл конвертирован в base64, MIME: ${mimeType}, длина base64: ${imageSource.length} символов`,
         );
       } else if (imageUrl) {
         imageSource = imageUrl;
