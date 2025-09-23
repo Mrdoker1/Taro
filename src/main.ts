@@ -10,9 +10,23 @@ async function bootstrap() {
     rawBody: true,
   });
 
-  // Увеличиваем лимит для загрузки файлов до 30MB (для фото с телефонов)
-  app.use(express.json({ limit: '30mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '30mb' }));
+  // Логирование всех входящих запросов для диагностики
+  app.use((req, res, next) => {
+    console.log(`=== ВХОДЯЩИЙ ЗАПРОС ===`);
+    console.log(`Метод: ${req.method}`);
+    console.log(`URL: ${req.url}`);
+    console.log(
+      `Content-Length: ${req.headers['content-length'] || 'не указан'}`,
+    );
+    console.log(`Content-Type: ${req.headers['content-type'] || 'не указан'}`);
+    console.log(`User-Agent: ${req.headers['user-agent'] || 'не указан'}`);
+    console.log(`===================`);
+    next();
+  });
+
+  // Увеличиваем лимит для загрузки файлов до 50MB (для больших фото с телефонов)
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Добавляем глобальную трансформацию
   app.useGlobalPipes(

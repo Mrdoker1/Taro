@@ -31,7 +31,7 @@ export class OcrController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: 30 * 1024 * 1024, // 30MB для фото с телефонов
+        fileSize: 50 * 1024 * 1024, // 50MB для больших фото с телефонов
       },
       fileFilter: (req, file, callback) => {
         // Поддерживаем основные форматы изображений с телефонов
@@ -99,10 +99,15 @@ export class OcrController {
     @UploadedFile() file?: any,
   ): Promise<OcrResponseDto> {
     try {
-      this.logger.log('Получен запрос на распознавание текста');
+      this.logger.log('=== НАЧАЛО OCR ЗАПРОСА ===');
+      this.logger.log(`URL: ${dto?.imageUrl || 'не указан'}`);
+      this.logger.log(
+        `Файл: ${file ? `${file.originalname} (${file.size} байт, ${file.mimetype})` : 'не загружен'}`,
+      );
 
       // Проверяем, что есть либо URL, либо файл
       if (!dto.imageUrl && !file) {
+        this.logger.error('Ошибка: нет ни URL, ни файла');
         throw new HttpException(
           'Необходимо указать URL изображения или загрузить файл',
           HttpStatus.BAD_REQUEST,
@@ -126,19 +131,36 @@ export class OcrController {
       }
 
       // Используем единый метод для обработки URL или файла
+      this.logger.log('Передаем запрос в OCR сервис...');
       const result = await this.ocrService.recognizeText(dto.imageUrl, file);
 
-      this.logger.log('Текст успешно распознан');
+      this.logger.log('=== OCR УСПЕШНО ЗАВЕРШЕН ===');
       return result;
     } catch (error) {
-      this.logger.error(`Ошибка при распознавании текста: ${error.message}`);
+      this.logger.error(`=== ОШИБКА OCR ===`);
+      this.logger.error(`Тип ошибки: ${error.constructor.name}`);
+      this.logger.error(`Сообщение: ${error.message}`);
+      this.logger.error(`Стек: ${error.stack}`);
+
+      // Специальная обработка ошибки 413 (Payload Too Large)
+      if (
+        error.message?.includes('PayloadTooLargeError') ||
+        error.message?.includes('request entity too large') ||
+        error.message?.includes('413')
+      ) {
+        this.logger.error('Обнаружена ошибка размера файла (413)');
+        throw new HttpException(
+          'Файл слишком большой. Максимальный размер: 30MB',
+          HttpStatus.PAYLOAD_TOO_LARGE,
+        );
+      }
 
       if (error instanceof HttpException) {
         throw error;
       }
 
       throw new HttpException(
-        'Внутренняя ошибка сервера',
+        `Внутренняя ошибка сервера: ${error.message}`,
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
