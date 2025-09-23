@@ -34,8 +34,6 @@ export class OcrService {
 
       // Если изображение больше лимита, сжимаем его
       while (compressedBuffer.length > maxSizeBytes && quality > 20) {
-        this.logger.log(`Сжимаем изображение с качеством ${quality}%`);
-
         compressedBuffer = await sharp(buffer)
           .jpeg({ quality, progressive: true })
           .toBuffer();
@@ -45,7 +43,6 @@ export class OcrService {
 
       // Если всё ещё слишком большое, уменьшаем разрешение
       if (compressedBuffer.length > maxSizeBytes) {
-        this.logger.log('Уменьшаем разрешение изображения');
         const metadata = await sharp(buffer).metadata();
         const newWidth = Math.floor((metadata.width || 1920) * 0.7);
 
@@ -77,14 +74,13 @@ export class OcrService {
       const model = QWEN_VL_MODELS.LARGE;
       const maxTokens = 8000; // Максимум для qwen-vl-max
 
-      this.logger.log(`Используем модель: ${model} с max_tokens: ${maxTokens}`);
-      this.logger.log('Начинаем распознавание текста с помощью Qwen VL');
+      this.logger.log('Начинаем распознавание текста');
 
       let imageSource: string;
 
       if (file) {
         this.logger.log(
-          `Обрабатываем загруженный файл: ${file.originalname}, размер: ${file.size} байт`,
+          `Обрабатываем файл: ${file.originalname} (${file.size} байт)`,
         );
 
         // Проверяем размер файла (максимум 100MB для фото с телефонов)
@@ -155,8 +151,6 @@ export class OcrService {
       - Учитывай структуру документа
 
       Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
-      this.logger.log(`Отправляем запрос к Qwen VL API с моделью: ${model}`);
-      this.logger.log(`Тип источника изображения: ${file ? 'файл' : 'URL'}`);
 
       const response = await this.qwenClient.chat.completions.create(
         {
@@ -189,8 +183,7 @@ export class OcrService {
       const recognizedText = response.choices[0]?.message?.content || '';
       const processingTime = Date.now() - startTime;
 
-      this.logger.log(`Текст успешно распознан за ${processingTime}мс`);
-      this.logger.log(`Полученный ответ: ${recognizedText}`);
+      this.logger.log(`Текст распознан за ${processingTime}мс`);
 
       // Очищаем ответ от markdown разметки
       let cleanedText = recognizedText;
@@ -203,7 +196,6 @@ export class OcrService {
       // Пытаемся распарсить ответ как JSON
       try {
         const jsonResult = JSON.parse(cleanedText);
-        this.logger.log('JSON успешно распарсен');
 
         // Проверяем на ошибки
         if (jsonResult.error) {
