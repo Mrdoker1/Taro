@@ -55,8 +55,19 @@ export class OcrService {
         );
       }
 
-      const systemPrompt = `Извлеки видимый текст с изображения. Верни JSON со структурой документа. Ключи полей на языке оригинала документа, Title Case, человекочитаемые (например, “Full Name”, “Date of Issue”).`;
-
+      const systemPrompt = `Проанализируй изображение и извлеки видимый текст.
+      ВАЖНО: ВСЕГДА отвечай ТОЛЬКО валидным JSON объектом, без дополнительных объяснений.
+      Если на изображении ЕСТЬ текст/документ:
+      - Верни JSON со структурой документа
+      - Ключи полей на языке оригинала документа, Title Case, человекочитаемые
+      - Пример: {"Document Type": "Passport", "Full Name": "John Smith", "Date": "2023-01-01"}
+      Если на изображении НЕТ текста или текст нечитаемый:
+      - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"}
+      Если изображение повреждено или неясное:
+      - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое или поврежденное для распознавания"}
+      Если документ содержит слишком много текста (более 2-3 страниц):
+      - Верни: {"error": "document_too_large", "message": "Документ содержит слишком много текста. Попробуйте разделить его на несколько частей"}
+      НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
       this.logger.log(
         `Отправляем запрос к Qwen VL API с моделью: ${DEFAULT_QWEN_VL_MODEL}`,
       );
@@ -82,10 +93,10 @@ export class OcrService {
               ],
             },
           ],
-          max_tokens: 4000,
+          max_tokens: 8000,
         },
         {
-          timeout: 30000, // 30 секунд тайм-аут
+          timeout: 60000, // 30 секунд тайм-аут
         },
       );
 
@@ -107,6 +118,14 @@ export class OcrService {
       try {
         const jsonResult = JSON.parse(cleanedText);
         this.logger.log('JSON успешно распарсен');
+
+        // Проверяем на ошибки
+        if (jsonResult.error) {
+          this.logger.warn(
+            `OCR вернул ошибку: ${jsonResult.error} - ${jsonResult.message}`,
+          );
+          return jsonResult; // Возвращаем ошибку как валидный JSON
+        }
         return jsonResult;
       } catch (parseError) {
         this.logger.warn(
