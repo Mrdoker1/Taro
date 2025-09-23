@@ -3,9 +3,16 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
 import { ValidationPipe } from '@nestjs/common';
+import * as express from 'express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
+
+  // Увеличиваем лимит для загрузки файлов до 30MB (для фото с телефонов)
+  app.use(express.json({ limit: '30mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
   // Добавляем глобальную трансформацию
   app.useGlobalPipes(
