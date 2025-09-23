@@ -1,6 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
+import * as sharp from 'sharp';
 
 // Константы моделей Qwen VL
 const QWEN_VL_MODELS = {
@@ -18,6 +19,51 @@ export class OcrService {
       apiKey: this.configService.get<string>('QWEN_API_KEY'),
       baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
     });
+  }
+
+  /**
+   * Сжимает изображение для соответствия лимитам API
+   */
+  private async compressImageIfNeeded(
+    buffer: Buffer,
+    maxSizeBytes: number = 8 * 1024 * 1024, // 8MB лимит для base64
+  ): Promise<Buffer> {
+    try {
+      let quality = 90;
+      let compressedBuffer = buffer;
+
+      // Если изображение больше лимита, сжимаем его
+      while (compressedBuffer.length > maxSizeBytes && quality > 20) {
+        this.logger.log(`Сжимаем изображение с качеством ${quality}%`);
+
+        compressedBuffer = await sharp(buffer)
+          .jpeg({ quality, progressive: true })
+          .toBuffer();
+
+        quality -= 10;
+      }
+
+      // Если всё ещё слишком большое, уменьшаем разрешение
+      if (compressedBuffer.length > maxSizeBytes) {
+        this.logger.log('Уменьшаем разрешение изображения');
+        const metadata = await sharp(buffer).metadata();
+        const newWidth = Math.floor((metadata.width || 1920) * 0.7);
+
+        compressedBuffer = await sharp(buffer)
+          .resize(newWidth)
+          .jpeg({ quality: 80, progressive: true })
+          .toBuffer();
+      }
+
+      this.logger.log(
+        `Изображение обработано: ${buffer.length} → ${compressedBuffer.length} байт`,
+      );
+
+      return compressedBuffer;
+    } catch (error) {
+      this.logger.warn(`Ошибка сжатия изображения: ${error.message}`);
+      return buffer; // Возвращаем оригинал при ошибке
+    }
   }
 
   /**
@@ -73,17 +119,23 @@ export class OcrService {
             `MIME тип неопределен (${mimeType}), используем: ${detectedMime}`,
           );
 
-          // Конвертируем файл в base64 для Qwen VL
-          const base64Data = file.buffer.toString('base64');
+          // Сжимаем изображение для API
+          const compressedBuffer = await this.compressImageIfNeeded(
+            file.buffer,
+          );
+          const base64Data = compressedBuffer.toString('base64');
           imageSource = `data:${detectedMime};base64,${base64Data}`;
         } else {
-          // Конвертируем файл в base64 для Qwen VL
-          const base64Data = file.buffer.toString('base64');
+          // Сжимаем изображение для API
+          const compressedBuffer = await this.compressImageIfNeeded(
+            file.buffer,
+          );
+          const base64Data = compressedBuffer.toString('base64');
           imageSource = `data:${mimeType};base64,${base64Data}`;
         }
 
         this.logger.log(
-          `Файл конвертирован в base64, MIME: ${mimeType}, длина base64: ${imageSource.length} символов`,
+          `Файл обработан, финальный размер base64: ${imageSource.length} символов`,
         );
       } else if (imageUrl) {
         imageSource = imageUrl;
