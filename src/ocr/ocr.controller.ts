@@ -126,8 +126,12 @@ export class OcrController {
       }
 
       // Используем единый метод для обработки URL или файла
-      this.logger.log('Передаем запрос в OCR сервис...');
-      const result = await this.ocrService.recognizeText(dto.imageUrl, file);
+      // По умолчанию используем быстрый режим
+      const result = await this.ocrService.recognizeText(
+        dto.imageUrl,
+        file,
+        true,
+      );
 
       this.logger.log('OCR успешно завершен');
       return result;
