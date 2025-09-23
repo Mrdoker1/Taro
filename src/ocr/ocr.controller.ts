@@ -31,7 +31,7 @@ export class OcrController {
   @UseInterceptors(
     FileInterceptor('file', {
       limits: {
-        fileSize: 50 * 1024 * 1024, // 50MB для больших фото с телефонов
+        fileSize: 100 * 1024 * 1024, // 100MB для очень больших фото с телефонов
       },
       fileFilter: (req, file, callback) => {
         // Поддерживаем основные форматы изображений с телефонов

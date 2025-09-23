@@ -24,9 +24,28 @@ async function bootstrap() {
     next();
   });
 
-  // Увеличиваем лимит для загрузки файлов до 50MB (для больших фото с телефонов)
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+  // Увеличиваем лимит для загрузки файлов до 100MB (для очень больших фото с телефонов)
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '100mb' }));
+
+  // Middleware для отлова ошибок размера запроса
+  app.use((err, req, res, next) => {
+    console.log(`=== ОШИБКА MIDDLEWARE ===`);
+    console.log(`Тип ошибки: ${err.type || 'неизвестен'}`);
+    console.log(`Сообщение: ${err.message}`);
+    console.log(`Статус: ${err.status || err.statusCode}`);
+    console.log(`========================`);
+
+    if (err.type === 'entity.too.large') {
+      return res.status(413).json({
+        error: 'Файл или запрос слишком большой',
+        message: 'Максимальный размер: 100MB',
+        limit: '100MB',
+      });
+    }
+
+    next(err);
+  });
 
   // Добавляем глобальную трансформацию
   app.useGlobalPipes(
