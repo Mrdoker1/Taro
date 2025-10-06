@@ -4,9 +4,11 @@ import {
   ConflictException,
   Logger,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from './schemas/user.schema';
@@ -311,5 +313,131 @@ export class AuthService {
     this.logger.log(`Пароль для пользователя ${user.username} успешно изменен`);
 
     return { message: 'Пароль успешно изменен' };
+  }
+
+  /**
+   * Запрос на сброс пароля - отправляет email с ссылкой
+   */
+  async forgotPassword(
+    email: string,
+    appType: string,
+  ): Promise<{ message: string }> {
+    this.logger.log(
+      `Запрос на сброс пароля для email: ${email}, appType: ${appType}`,
+    );
+
+    // Ищем пользователя по email
+    const user = await this.userModel.findOne({ email });
+    if (!user) {
+      // Не раскрываем информацию о том, существует ли пользователь
+      this.logger.warn(
+        `Попытка сброса пароля для несуществующего email: ${email}`,
+      );
+      return {
+        message:
+          'Если пользователь с таким email существует, ссылка для сброса пароля отправлена на почту',
+      };
+    }
+
+    // Генерируем токен сброса пароля
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 минут
+
+    // Сохраняем токен в базе данных
+    await this.userModel.findByIdAndUpdate(user._id, {
+      resetPasswordToken: resetToken,
+      resetPasswordExpires: resetTokenExpires,
+    });
+
+    // Формируем ссылку для сброса пароля
+    const baseUrl =
+      process.env.NODE_ENV === 'production'
+        ? process.env.FRONTEND_URL || 'https://taroapi.uno'
+        : 'http://localhost:3000';
+    const resetUrl = `${baseUrl}/auth/reset-password?token=${resetToken}`;
+
+    // Получаем название приложения
+    const appName = this.getAppName(appType);
+
+    // Отправляем email
+    try {
+      await this.mailService.sendPasswordResetEmail(
+        user.email,
+        user.username,
+        resetUrl,
+        appName,
+      );
+      this.logger.log(`Письмо для сброса пароля отправлено на: ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Ошибка отправки email для сброса пароля: ${error.message}`,
+      );
+      // Очищаем токен если не удалось отправить email
+      await this.userModel.findByIdAndUpdate(user._id, {
+        resetPasswordToken: undefined,
+        resetPasswordExpires: undefined,
+      });
+      throw new BadRequestException('Ошибка отправки email. Попробуйте позже.');
+    }
+
+    return {
+      message:
+        'Если пользователь с таким email существует, ссылка для сброса пароля отправлена на почту',
+    };
+  }
+
+  /**
+   * Сброс пароля по токену
+   */
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
+    this.logger.log(
+      `Попытка сброса пароля по токену: ${token.substring(0, 8)}...`,
+    );
+
+    // Ищем пользователя с действующим токеном
+    const user = await this.userModel.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: new Date() }, // Токен еще не истек
+    });
+
+    if (!user) {
+      this.logger.warn(
+        `Недействительный или истекший токен сброса пароля: ${token.substring(0, 8)}...`,
+      );
+      throw new BadRequestException(
+        'Недействительный или истекший токен сброса пароля',
+      );
+    }
+
+    // Хешируем новый пароль
+    const hashedPassword = await this.hashPassword(newPassword);
+
+    // Обновляем пароль и очищаем токен сброса
+    await this.userModel.findByIdAndUpdate(user._id, {
+      password: hashedPassword,
+      resetPasswordToken: undefined,
+      resetPasswordExpires: undefined,
+      updatedAt: new Date(),
+    });
+
+    this.logger.log(
+      `Пароль успешно сброшен для пользователя: ${user.username}`,
+    );
+
+    return { message: 'Пароль успешно изменен' };
+  }
+
+  /**
+   * Получает человекочитаемое название приложения по его типу
+   */
+  private getAppName(appType: string): string {
+    const appNames: Record<string, string> = {
+      'doc-scan': 'Doc Scan',
+    };
+
+    return appNames[appType] || appType;
   }
 }

@@ -1,58 +1,92 @@
-import { Injectable } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
-import { loadTemplate } from './template-loader'; // Import the loadTemplate function
-import { getServerConfig } from 'src/utils/serverConfig';
+import { Injectable, Logger } from '@nestjs/common';
+import { Resend } from 'resend';
+import { loadTemplate } from './template-loader';
 
 @Injectable()
 export class MailService {
-  private transporter;
+  private readonly logger = new Logger(MailService.name);
+  private resend: Resend;
 
   constructor() {
-    this.initializeTransporter().catch(error => {
-      console.error('Error initializing transporter:', error);
-    });
+    // Инициализируем Resend с API ключом
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+      this.logger.error('RESEND_API_KEY не установлен в переменных окружения');
+      throw new Error('RESEND_API_KEY required');
+    }
+    this.resend = new Resend(apiKey);
+    this.logger.log('Resend сервис инициализирован');
   }
 
-  private async initializeTransporter() {
-    this.transporter = await this.createTransporter();
-  }
-
-  private createTransporter() {
-    return nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      port: process.env.MAIL_PORT,
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
-  }
-
-  private createMailOptions(userEmail: string, html: string) {
-    return {
-      from: 'Renault Club',
-      to: userEmail,
-      subject: 'Подтверждение email',
-      html,
-    };
-  }
-
-  // Отправка email подтверждения
+  // Отправка email подтверждения (оставляем для совместимости)
   async sendConfirmationEmail(userEmail: string, userId: string) {
-    const { port, server } = getServerConfig();
-    const confirmationUrl = `http://${server}:${port}/auth/confirm/${userId}`;
+    const confirmationUrl = `${process.env.FRONTEND_URL || 'https://taroapi.uno'}/auth/confirm/${userId}`;
 
     // Загружаем HTML-шаблон
     const html = await loadTemplate('confirmation', { confirmationUrl });
-    const mailOptions = this.createMailOptions(userEmail, html);
 
     try {
-      await this.transporter.sendMail(mailOptions);
-      console.log('Confirmation email sent successfully');
+      const { data, error } = await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'Taro API <noreply@taroapi.uno>',
+        to: [userEmail],
+        subject: 'Подтверждение email - Taro API',
+        html,
+      });
+
+      if (error) {
+        this.logger.error('Ошибка отправки email подтверждения:', error);
+        throw new Error('Ошибка при отправке письма');
+      }
+
+      this.logger.log(
+        `Email подтверждения отправлен на ${userEmail}, ID: ${data?.id}`,
+      );
     } catch (error) {
-      console.error('Error sending email:', error);
+      this.logger.error('Ошибка отправки email:', error);
       throw new Error('Ошибка при отправке письма');
+    }
+  }
+
+  // Отправка email для сброса пароля
+  async sendPasswordResetEmail(
+    userEmail: string,
+    username: string,
+    resetUrl: string,
+    appName: string,
+  ) {
+    this.logger.log(
+      `Отправляем email сброса пароля на: ${userEmail} от приложения: ${appName}`,
+    );
+
+    try {
+      // Загружаем HTML-шаблон для сброса пароля
+      const html = await loadTemplate('password-reset', {
+        username,
+        resetUrl,
+        appName,
+        validUntil: new Date(Date.now() + 15 * 60 * 1000).toLocaleString(
+          'ru-RU',
+        ),
+      });
+
+      const { data, error } = await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'Viachas Kul <noreply@taroapi.uno>',
+        to: [userEmail],
+        subject: `🔐 Сброс пароля - ${appName}`,
+        html,
+      });
+
+      if (error) {
+        this.logger.error('Ошибка Resend API:', error);
+        throw new Error(`Ошибка Resend: ${error.message}`);
+      }
+
+      this.logger.log(
+        `Email сброса пароля отправлен на ${userEmail}, ID: ${data?.id}`,
+      );
+    } catch (error) {
+      this.logger.error('Ошибка отправки email сброса пароля:', error.message);
+      throw new Error('Ошибка при отправке письма для сброса пароля');
     }
   }
 }

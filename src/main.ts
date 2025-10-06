@@ -4,6 +4,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -47,6 +48,7 @@ async function bootstrap() {
 
   configureCors(app);
   setupSwagger(app);
+  setupStaticRoutes(app);
 
   const { port, server } = getServerConfig();
 
@@ -116,6 +118,16 @@ function setupSwagger(app) {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+}
+
+function setupStaticRoutes(app) {
+  // Раздача статических файлов для страниц сброса пароля
+  const templatesPath = path.join(__dirname, 'templates');
+
+  // Настраиваем статический middleware для папки templates
+  app.use('/templates', express.static(templatesPath));
+
+  console.log(`Static templates served from: ${templatesPath}`);
 }
 
 bootstrap().catch(error => {

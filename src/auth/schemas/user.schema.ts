@@ -32,6 +32,12 @@ export class User {
 
   @Prop({ required: false }) // Дата истечения подписки (опционально)
   subscriptionExpiresAt?: Date;
+
+  @Prop({ required: false }) // Токен для сброса пароля
+  resetPasswordToken?: string;
+
+  @Prop({ required: false }) // Время истечения токена сброса пароля
+  resetPasswordExpires?: Date;
 }
 
 export type UserDocument = User & Document;
