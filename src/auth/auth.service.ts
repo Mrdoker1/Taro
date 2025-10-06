@@ -59,6 +59,16 @@ export class AuthService {
     }
   }
 
+  // Создание запроса для поиска по email (нечувствительно к регистру)
+  private createEmailQuery(email: string) {
+    return {
+      $regex: new RegExp(
+        `^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
+        'i',
+      ),
+    };
+  }
+
   // Сравнение паролей
   async comparePasswords(password: string, hash: string): Promise<boolean> {
     try {
@@ -169,7 +179,9 @@ export class AuthService {
   }
 
   async checkUserExistence(username: string, email: string) {
-    const existingUserByEmail = await this.userModel.findOne({ email });
+    const existingUserByEmail = await this.userModel.findOne({
+      email: this.createEmailQuery(email),
+    });
     if (existingUserByEmail) {
       throw new ConflictException('Пользователь с таким email уже существует');
     }
@@ -185,9 +197,9 @@ export class AuthService {
     const { username, password } = loginUserDto;
     this.logger.log(`Попытка входа пользователя: ${username}`);
 
-    // Ищем пользователя по username или email
+    // Ищем пользователя по username или email (нечувствительно к регистру для email)
     const user = await this.userModel.findOne({
-      $or: [{ username }, { email: username }],
+      $or: [{ username }, { email: this.createEmailQuery(username) }],
     });
 
     if (!user) {
@@ -326,8 +338,10 @@ export class AuthService {
       `Запрос на сброс пароля для email: ${email}, appType: ${appType}`,
     );
 
-    // Ищем пользователя по email
-    const user = await this.userModel.findOne({ email });
+    // Ищем пользователя по email (нечувствительно к регистру)
+    const user = await this.userModel.findOne({
+      email: this.createEmailQuery(email),
+    });
     if (!user) {
       // Не раскрываем информацию о том, существует ли пользователь
       this.logger.warn(
