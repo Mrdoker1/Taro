@@ -5,7 +5,8 @@ import * as sharp from 'sharp';
 
 // Константы моделей Qwen VL
 const QWEN_VL_MODELS = {
-  LARGE: 'qwen-vl-max', // Доступная модель с большим контекстом
+  FAST: 'qwen-vl-plus', // Быстрая модель
+  LARGE: 'qwen-vl-max', // Медленная но мощная модель
 };
 
 @Injectable()
@@ -22,42 +23,49 @@ export class OcrService {
   }
 
   /**
-   * Сжимает изображение для соответствия лимитам API
+   * Сжимает изображение для быстрой обработки AI моделью
    */
   private async compressImageIfNeeded(
     buffer: Buffer,
-    maxSizeBytes: number = 8 * 1024 * 1024, // 8MB лимит для base64
+    maxSizeBytes: number = 4 * 1024 * 1024, // 4MB лимит для ускорения
   ): Promise<Buffer> {
     try {
-      let quality = 90;
+      // Более агрессивное сжатие для ускорения обработки
+      let quality = 75; // Начинаем с меньшего качества
       let compressedBuffer = buffer;
 
-      // Если изображение больше лимита, сжимаем его
-      while (compressedBuffer.length > maxSizeBytes && quality > 20) {
-        this.logger.log(`Сжимаем изображение с качеством ${quality}%`);
+      // Сначала уменьшаем разрешение если изображение очень большое
+      const metadata = await sharp(buffer).metadata();
+      if (metadata.width && metadata.width > 1920) {
+        buffer = await sharp(buffer)
+          .resize(1920) // Максимум 1920px по ширине
+          .toBuffer();
+      }
 
+      // Если изображение больше лимита, сжимаем его
+      while (compressedBuffer.length > maxSizeBytes && quality > 30) {
         compressedBuffer = await sharp(buffer)
           .jpeg({ quality, progressive: true })
           .toBuffer();
 
-        quality -= 10;
+        quality -= 15; // Более агрессивное снижение качества
       }
 
-      // Если всё ещё слишком большое, уменьшаем разрешение
+      // Если всё ещё слишком большое, дополнительно уменьшаем разрешение
       if (compressedBuffer.length > maxSizeBytes) {
-        this.logger.log('Уменьшаем разрешение изображения');
-        const metadata = await sharp(buffer).metadata();
-        const newWidth = Math.floor((metadata.width || 1920) * 0.7);
+        const newWidth = Math.floor((metadata.width || 1920) * 0.6);
 
         compressedBuffer = await sharp(buffer)
           .resize(newWidth)
-          .jpeg({ quality: 80, progressive: true })
+          .jpeg({ quality: 60, progressive: true }) // Меньше качество для ускорения
           .toBuffer();
       }
 
-      this.logger.log(
-        `Изображение обработано: ${buffer.length} → ${compressedBuffer.length} байт`,
-      );
+      if (buffer.length !== compressedBuffer.length) {
+        this.logger.log(
+          `Изображение сжато: ${Math.round(buffer.length / 1024)}KB → ${Math.round(compressedBuffer.length / 1024)}KB`,
+        );
+      }
 
       return compressedBuffer;
     } catch (error) {
@@ -69,22 +77,27 @@ export class OcrService {
   /**
    * Распознает текст на изображении (URL или файл)
    */
-  async recognizeText(imageUrl?: string, file?: any): Promise<any> {
+  async recognizeText(
+    imageUrl?: string,
+    file?: any,
+    useFastMode = true,
+  ): Promise<any> {
     const startTime = Date.now();
 
     try {
-      // Используем большую модель по умолчанию для всех документов
-      const model = QWEN_VL_MODELS.LARGE;
-      const maxTokens = 8000; // Максимум для qwen-vl-max
+      // Выбираем модель в зависимости от режима
+      const model = useFastMode ? QWEN_VL_MODELS.FAST : QWEN_VL_MODELS.LARGE;
+      const maxTokens = 8000;
 
-      this.logger.log(`Используем модель: ${model} с max_tokens: ${maxTokens}`);
-      this.logger.log('Начинаем распознавание текста с помощью Qwen VL');
+      this.logger.log(
+        `Распознавание текста (${useFastMode ? 'быстрый' : 'точный'} режим)`,
+      );
 
       let imageSource: string;
 
       if (file) {
         this.logger.log(
-          `Обрабатываем загруженный файл: ${file.originalname}, размер: ${file.size} байт`,
+          `Обрабатываем файл: ${file.originalname} (${file.size} байт)`,
         );
 
         // Проверяем размер файла (максимум 100MB для фото с телефонов)
@@ -155,8 +168,6 @@ export class OcrService {
       - Учитывай структуру документа
 
       Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
-      this.logger.log(`Отправляем запрос к Qwen VL API с моделью: ${model}`);
-      this.logger.log(`Тип источника изображения: ${file ? 'файл' : 'URL'}`);
 
       const response = await this.qwenClient.chat.completions.create(
         {
@@ -179,18 +190,17 @@ export class OcrService {
             },
           ],
           max_tokens: maxTokens,
-          temperature: 0.1,
+          temperature: 0.0, // Минимальная температура для быстрого и детерминированного ответа
         },
         {
-          timeout: 60000, // Увеличиваем тайм-аут для больших документов
+          timeout: 45000, // Уменьшаем тайм-аут для ускорения
         },
       );
 
       const recognizedText = response.choices[0]?.message?.content || '';
       const processingTime = Date.now() - startTime;
 
-      this.logger.log(`Текст успешно распознан за ${processingTime}мс`);
-      this.logger.log(`Полученный ответ: ${recognizedText}`);
+      this.logger.log(`Текст распознан за ${processingTime}мс`);
 
       // Очищаем ответ от markdown разметки
       let cleanedText = recognizedText;
@@ -203,7 +213,6 @@ export class OcrService {
       // Пытаемся распарсить ответ как JSON
       try {
         const jsonResult = JSON.parse(cleanedText);
-        this.logger.log('JSON успешно распарсен');
 
         // Проверяем на ошибки
         if (jsonResult.error) {

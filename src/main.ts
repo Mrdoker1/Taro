@@ -4,24 +4,11 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
+import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
-  });
-
-  // Логирование всех входящих запросов для диагностики
-  app.use((req, res, next) => {
-    console.log(`=== ВХОДЯЩИЙ ЗАПРОС ===`);
-    console.log(`Метод: ${req.method}`);
-    console.log(`URL: ${req.url}`);
-    console.log(
-      `Content-Length: ${req.headers['content-length'] || 'не указан'}`,
-    );
-    console.log(`Content-Type: ${req.headers['content-type'] || 'не указан'}`);
-    console.log(`User-Agent: ${req.headers['user-agent'] || 'не указан'}`);
-    console.log(`===================`);
-    next();
   });
 
   // Увеличиваем лимит для загрузки файлов до 100MB (для очень больших фото с телефонов)
@@ -61,6 +48,7 @@ async function bootstrap() {
 
   configureCors(app);
   setupSwagger(app);
+  setupStaticRoutes(app);
 
   const { port, server } = getServerConfig();
 
@@ -130,6 +118,16 @@ function setupSwagger(app) {
 
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
+}
+
+function setupStaticRoutes(app) {
+  // Раздача статических файлов для страниц сброса пароля
+  const templatesPath = path.join(__dirname, 'templates');
+
+  // Настраиваем статический middleware для папки templates
+  app.use('/templates', express.static(templatesPath));
+
+  console.log(`Static templates served from: ${templatesPath}`);
 }
 
 bootstrap().catch(error => {

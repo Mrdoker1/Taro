@@ -6,6 +6,8 @@ import {
   UseGuards,
   Req,
   Patch,
+  Query,
+  Res,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -14,11 +16,16 @@ import {
   ApiBody,
   ApiBearerAuth,
 } from '@nestjs/swagger';
+import { Response } from 'express';
+import * as path from 'path';
+import * as fs from 'fs';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { UpdateSubscriptionDto } from './dto/update-subscription.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { createUserDtoExample, loginUserDtoExample } from './dto/examples';
 
@@ -108,5 +115,64 @@ export class AuthController {
       changePasswordDto.currentPassword,
       changePasswordDto.newPassword,
     );
+  }
+
+  // Запрос на сброс пароля
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Запрос на сброс пароля' })
+  @ApiResponse({
+    status: 200,
+    description:
+      'Ссылка для сброса пароля отправлена на email (если пользователь существует)',
+  })
+  @ApiResponse({ status: 400, description: 'Ошибка валидации' })
+  @ApiBody({
+    description: 'Email для сброса пароля',
+    type: ForgotPasswordDto,
+  })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return await this.authService.forgotPassword(
+      forgotPasswordDto.email,
+      forgotPasswordDto.appType,
+    );
+  }
+
+  // Сброс пароля по токену
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Сброс пароля по токену' })
+  @ApiResponse({ status: 200, description: 'Пароль успешно изменен' })
+  @ApiResponse({
+    status: 400,
+    description: 'Недействительный или истекший токен',
+  })
+  @ApiBody({
+    description: 'Токен и новый пароль',
+    type: ResetPasswordDto,
+  })
+  async resetPassword(@Body() resetPasswordDto: ResetPasswordDto) {
+    return await this.authService.resetPassword(
+      resetPasswordDto.token,
+      resetPasswordDto.newPassword,
+    );
+  }
+
+  // Страница для ввода нового пароля
+  @Get('reset-password')
+  @ApiOperation({ summary: 'Страница сброса пароля' })
+  @ApiResponse({ status: 200, description: 'HTML страница сброса пароля' })
+  getResetPasswordPage(@Query('token') token: string, @Res() res: Response) {
+    try {
+      const filePath = path.join(
+        __dirname,
+        '..',
+        'templates',
+        'reset-password-form.html',
+      );
+      const html = fs.readFileSync(filePath, 'utf8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch {
+      res.status(404).send('Страница не найдена');
+    }
   }
 }

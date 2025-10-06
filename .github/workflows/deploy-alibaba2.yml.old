@@ -29,11 +29,11 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-          # Готовим минимальный runtime-артефакт
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
+          # в артефакт кладём только то, что нужно в runtime
           cp -r dist package.json package-lock.json deploy_artifact/
-          # .env НЕ кладём — он хранится на сервере
+          # ВАЖНО: .env НЕ кладём (он хранится на сервере)
 
       - name: Copy artifact to server (as files)
         uses: appleboy/scp-action@v0.1.7
@@ -47,7 +47,7 @@ jobs:
           target: "/tmp/deploy_artifact"
           rm: true
 
-      - name: Release artifact on server (simple & safe)
+      - name: Release artifact on server
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.ALI_DEPLOY_HOST }}
@@ -55,76 +55,70 @@ jobs:
           key: ${{ secrets.ALI_DEPLOY_SSH_KEY }}
           passphrase: ${{ secrets.ALI_DEPLOY_SSH_PASSPHRASE }}
           port: 22
-          command_timeout: 30m
+          command_timeout: 45m
           script: |
             set -euxo pipefail
             SHA="${GITHUB_SHA:-unknown}"
 
-            # (Опционально) разовая подстраховка — если когда-то запускали PM2 под admin
-            sudo -u admin pm2 kill || true
+            # swap (1 раз создаст, потом будет просто использоваться)
+            if [ ! -f /swapfile ]; then
+              sudo fallocate -l 2G /swapfile || sudo dd if=/dev/zero of=/swapfile bs=1M count=2048
+              sudo chmod 600 /swapfile
+              sudo mkswap /swapfile
+              echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+              sudo swapon -a
+            fi
 
-            # Все действия — от имени myapp
             sudo -u myapp SHA="$SHA" bash -s <<'REMOTE'
             set -euxo pipefail
-
-            APP_NAME="myapp-api"
-            PORT=3000
             SRC="/tmp/deploy_artifact"
-            APP_DIR="/srv/myapp/repo"
+            DEST="/srv/myapp/repo"
 
-            # Найти корень с package.json в артефакте
+            # найдём корень артефакта с package.json
             if [ -f "$SRC/package.json" ]; then
               SRC_USE="$SRC"
             else
               SRC_USE="$(find "$SRC" -maxdepth 2 -type f -name package.json -printf '%h\n' -quit || true)"
               [ -n "$SRC_USE" ] || { echo "package.json не найден в $SRC"; exit 1; }
             fi
-            echo "Using artifact at: $SRC_USE"
+            echo "SRC_USE=$SRC_USE"
 
-            mkdir -p "$APP_DIR"
-            cd "$APP_DIR"
+            mkdir -p "$DEST"
+            cd "$DEST"
 
-            # Небольшой бэкап на всякий
+            # резервная копия предыдущей версии
             mkdir -p ../releases
-            TS="$(date -u +%Y%m%d%H%M%S)"
+            ts="$(date -u +%Y%m%d%H%M%S)"
             if [ -d dist ] || [ -f package.json ]; then
-              tar -czf "../releases/backup-$TS.tgz" dist package*.json .env* 2>/dev/null || true
+              tar -czf "../releases/backup-$ts.tgz" dist package*.json .env* 2>/dev/null || true
             fi
 
-            # Обновляем файлы, .env* не трогаем
+            # ВАЖНО: .env* сохраняем, не удаляем
             rsync -a --delete \
               --exclude '.env*' \
-              "$SRC_USE"/ "$APP_DIR"/
+              "$SRC_USE"/ "$DEST"/
 
-            # Проверим, что .env на месте и не пуст
-            [ -s .env ] || { echo ".env отсутствует или пуст — прерываю"; exit 1; }
+            # Проверим, что .env остался (и не пустой)
+            [ -s .env ] || { echo ".env отсутствует или пуст — прерываю деплой"; exit 1; }
+            # Подстрахуемся от CRLF
             sed -i 's/\r$//' .env
 
-            # Прод-зависимости
+            # ставим прод-зависимости
             if [ -f package-lock.json ]; then
               npm ci --omit=dev --no-audit --no-fund
             else
               npm install --omit=dev --no-audit --no-fund
             fi
 
-            # Метка деплоя
             echo "sha=$SHA time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
 
-            # Перезапуск без даунтайма (если есть), иначе старт
-            export NODE_ENV=production
-            if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
-              pm2 reload "$APP_NAME" --update-env
+            if pm2 describe myapp-api >/dev/null 2>&1; then
+              pm2 restart myapp-api --update-env
             else
-              pm2 start /usr/bin/node --name "$APP_NAME" --time -- dist/main.js
+              # Явно стартуем dist/main.js, чтобы не зависеть от npm scripts
+              pm2 start /usr/bin/node --name myapp-api --time -- dist/main.js
             fi
             pm2 save
 
-            # Короткий healthcheck (не усложняем откатами)
-            if curl -fsS "http://127.0.0.1:$PORT/api" >/dev/null; then
-              echo "API is healthy on :$PORT"
-            else
-              echo "WARNING: healthcheck failed (http://127.0.0.1:$PORT/api)" >&2
-            fi
-
-            echo "DEPLOYED $(cat .deploy_info)"
+            echo "ALIBABA ARTIFACT DEPLOYED $(cat .deploy_info)"
             REMOTE
