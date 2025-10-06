@@ -72,7 +72,7 @@ export class MailService {
       const { data, error } = await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'Viachas Kul <noreply@taroapi.uno>',
         to: [userEmail],
-        subject: `🔐 Сброс пароля - ${appName}`,
+        subject: `🔐 Password Reset - ${appName}`,
         html,
       });
 
