@@ -6,7 +6,7 @@ import * as sharp from 'sharp';
 // Константы моделей Qwen VL
 const QWEN_VL_MODELS = {
   OCR: 'qwen-vl-ocr', // Специализированная OCR модель
-  OCR_LATEST: 'qwen-vl-ocr-2025-08-28', // Последняя версия с улучшенной локализацией текста
+  OCR_LATEST: 'qwen-vl-ocr-latest', // Последняя версия с улучшенной локализацией текста
   FAST: 'qwen-vl-plus', // Быстрая модель (fallback)
   LARGE: 'qwen-vl-max', // Медленная но мощная модель (fallback)
 };
@@ -25,55 +25,81 @@ export class OcrService {
   }
 
   /**
-   * Сжимает изображение для обработки AI моделью с высоким качеством
+   * Сжимает изображение только если оно больше лимита
    */
-  private async compressImageIfNeeded(
-    buffer: Buffer,
-    maxSizeBytes: number = 10 * 1024 * 1024, // 10MB лимит для лучшего качества
-  ): Promise<Buffer> {
+  private async compress(buffer: Buffer): Promise<Buffer> {
     try {
-      // Менее агрессивное сжатие для лучшего качества OCR
-      let quality = 90; // Начинаем с высокого качества
-      let compressedBuffer = buffer;
+      const maxSizeBytes = 7 * 1024 * 1024; // 7MB для учета base64 увеличения
 
-      // Сначала уменьшаем разрешение если изображение очень большое
-      const metadata = await sharp(buffer).metadata();
-      if (metadata.width && metadata.width > 3840) {
-        buffer = await sharp(buffer)
-          .resize(3840) // Максимум 4K разрешение для лучшего качества OCR
-          .toBuffer();
-      }
-
-      // Если изображение больше лимита, сжимаем его
-      while (compressedBuffer.length > maxSizeBytes && quality > 30) {
-        compressedBuffer = await sharp(buffer)
-          .jpeg({ quality, progressive: true })
-          .toBuffer();
-
-        quality -= 15; // Более агрессивное снижение качества
-      }
-
-      // Если всё ещё слишком большое, дополнительно уменьшаем разрешение
-      if (compressedBuffer.length > maxSizeBytes) {
-        const newWidth = Math.floor((metadata.width || 1920) * 0.6);
-
-        compressedBuffer = await sharp(buffer)
-          .resize(newWidth)
-          .jpeg({ quality: 60, progressive: true }) // Меньше качество для ускорения
-          .toBuffer();
-      }
-
-      if (buffer.length !== compressedBuffer.length) {
+      // Если файл уже маленький, не трогаем его
+      if (buffer.length <= maxSizeBytes) {
         this.logger.log(
-          `Изображение сжато: ${Math.round(buffer.length / 1024)}KB → ${Math.round(compressedBuffer.length / 1024)}KB`,
+          `Файл ${Math.round(buffer.length / 1024)}KB уже достаточно мал, сжатие не требуется`,
         );
+        return buffer;
       }
+
+      let compressedBuffer = buffer;
+      let quality = 85;
+
+      // Получаем метаданные изображения
+      const metadata = await sharp(buffer).metadata();
+      let width = metadata.width || 1920;
+
+      // Сжимаем пока не достигнем нужного размера
+      while (
+        compressedBuffer.length > maxSizeBytes &&
+        (quality > 20 || width > 800)
+      ) {
+        if (quality > 20) {
+          // Сначала снижаем качество
+          compressedBuffer = await sharp(buffer)
+            .resize(width)
+            .jpeg({ quality, progressive: true })
+            .toBuffer();
+          quality -= 15;
+        } else {
+          // Если качество минимальное, уменьшаем разрешение
+          width = Math.floor(width * 0.8);
+          compressedBuffer = await sharp(buffer)
+            .resize(width)
+            .jpeg({ quality: 20, progressive: true })
+            .toBuffer();
+        }
+      }
+
+      this.logger.log(
+        `Изображение сжато: ${Math.round(buffer.length / 1024)}KB → ${Math.round(compressedBuffer.length / 1024)}KB`,
+      );
 
       return compressedBuffer;
     } catch (error) {
       this.logger.warn(`Ошибка сжатия изображения: ${error.message}`);
-      return buffer; // Возвращаем оригинал при ошибке
+      return buffer;
     }
+  }
+
+  /**
+   * Создает data-uri с автоматическим сжатием
+   */
+  private async createDataUri(
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<string> {
+    const compressedBuffer = await this.compress(buffer);
+    const base64Data = compressedBuffer.toString('base64');
+    const base64Size = base64Data.length;
+
+    // Показываем размер в KB или MB в зависимости от размера
+    if (base64Size > 1024 * 1024) {
+      this.logger.log(
+        `Base64 размер: ${Math.round(base64Size / 1024 / 1024)}MB`,
+      );
+    } else {
+      this.logger.log(`Base64 размер: ${Math.round(base64Size / 1024)}KB`);
+    }
+
+    return `data:${mimeType};base64,${base64Data}`;
   }
 
   /**
@@ -90,9 +116,9 @@ export class OcrService {
     try {
       // Используем специализированную OCR модель
       const model = useFastMode
-        ? QWEN_VL_MODELS.OCR
+        ? QWEN_VL_MODELS.LARGE
         : QWEN_VL_MODELS.OCR_LATEST;
-      const maxTokens = 8192; // Максимальный лимит для qwen-vl-ocr (требует одобрения)
+      const maxTokens = 8192;
 
       this.logger.log(
         `OCR распознавание (${useFastMode ? 'базовая' : 'улучшенная'} модель): ${model}`,
@@ -137,19 +163,11 @@ export class OcrService {
             `MIME тип неопределен (${mimeType}), используем: ${detectedMime}`,
           );
 
-          // Сжимаем изображение для API
-          const compressedBuffer = await this.compressImageIfNeeded(
-            file.buffer,
-          );
-          const base64Data = compressedBuffer.toString('base64');
-          imageSource = `data:${detectedMime};base64,${base64Data}`;
+          // Создаем data-uri с автоматическим сжатием
+          imageSource = await this.createDataUri(file.buffer, detectedMime);
         } else {
-          // Сжимаем изображение для API
-          const compressedBuffer = await this.compressImageIfNeeded(
-            file.buffer,
-          );
-          const base64Data = compressedBuffer.toString('base64');
-          imageSource = `data:${mimeType};base64,${base64Data}`;
+          // Создаем data-uri с автоматическим сжатием
+          imageSource = await this.createDataUri(file.buffer, mimeType);
         }
 
         this.logger.log(
@@ -164,22 +182,26 @@ export class OcrService {
         );
       }
 
-      // Максимально строгий промпт с принуждением к английским ключам
+      // Промпт настроенный на максимальное извлечение текста
       const ocrPrompt = `
-      Ты — детерминированный извлекатель текста из изображений (OCR post-processor). 
-      Твоя задача — распознать ВЕСЬ доступный текст и вернуть СТРОГО один валидный JSON-объект по схеме ниже. 
+      Ты - эксперт по распознаванию текста. Внимательно изучи изображение и найди ЛЮБОЙ текст, даже если он:
+      - Мелкий или размытый
+      - Написан от руки
+      - На иностранном языке  
+      - Частично скрыт
+      - Водяной знак или логотип
+      
+      Верни JSON с найденным текстом. Ключи должны быть на английском языке.
+      
+      Если действительно НЕТ НИКАКОГО текста:
+      {"error": "no_text_found", "message": "На изображении не найден читаемый текст"}
+      
+      Ответ должен быть валидным JSON, начинающимся с { и заканчивающимся на }.`;
 
-      Требования:
-      - Ключи — человекочитаемые
-      - Учитывай структуру документа
-      - Если это сплошной текст, раздели его на абзацам с разными ключами (paragraph_1, paragraph_2, ...)
-
-      Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
-
-      // Настройки изображения для qwen-vl-ocr с максимальным качеством
+      // Настройки изображения для максимального качества OCR
       const imageSettings = {
-        min_pixels: 28 * 28 * 4, // Минимальный порог пикселей
-        max_pixels: 28 * 28 * 20000, // Увеличенный лимит для лучшего качества (макс: 30000)
+        min_pixels: 28 * 28 * 8, // Увеличили минимальный порог
+        max_pixels: 28 * 28 * 30000, // Максимальный лимит для лучшего качества
       };
 
       const response = await this.qwenClient.chat.completions.create(
