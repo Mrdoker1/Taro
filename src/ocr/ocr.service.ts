@@ -25,22 +25,22 @@ export class OcrService {
   }
 
   /**
-   * Сжимает изображение для быстрой обработки AI моделью
+   * Сжимает изображение для обработки AI моделью с высоким качеством
    */
   private async compressImageIfNeeded(
     buffer: Buffer,
-    maxSizeBytes: number = 4 * 1024 * 1024, // 4MB лимит для ускорения
+    maxSizeBytes: number = 10 * 1024 * 1024, // 10MB лимит для лучшего качества
   ): Promise<Buffer> {
     try {
-      // Более агрессивное сжатие для ускорения обработки
-      let quality = 75; // Начинаем с меньшего качества
+      // Менее агрессивное сжатие для лучшего качества OCR
+      let quality = 90; // Начинаем с высокого качества
       let compressedBuffer = buffer;
 
       // Сначала уменьшаем разрешение если изображение очень большое
       const metadata = await sharp(buffer).metadata();
-      if (metadata.width && metadata.width > 1920) {
+      if (metadata.width && metadata.width > 3840) {
         buffer = await sharp(buffer)
-          .resize(1920) // Максимум 1920px по ширине
+          .resize(3840) // Максимум 4K разрешение для лучшего качества OCR
           .toBuffer();
       }
 
@@ -92,7 +92,7 @@ export class OcrService {
       const model = useFastMode
         ? QWEN_VL_MODELS.OCR
         : QWEN_VL_MODELS.OCR_LATEST;
-      const maxTokens = 4096; // Стандартный лимит для qwen-vl-ocr
+      const maxTokens = 8192; // Максимальный лимит для qwen-vl-ocr (требует одобрения)
 
       this.logger.log(
         `OCR распознавание (${useFastMode ? 'базовая' : 'улучшенная'} модель): ${model}`,
@@ -176,10 +176,10 @@ export class OcrService {
 
       Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
 
-      // Настройки изображения для qwen-vl-ocr
+      // Настройки изображения для qwen-vl-ocr с максимальным качеством
       const imageSettings = {
         min_pixels: 28 * 28 * 4, // Минимальный порог пикселей
-        max_pixels: 28 * 28 * 8192, // Максимальный порог пикселей
+        max_pixels: 28 * 28 * 20000, // Увеличенный лимит для лучшего качества (макс: 30000)
       };
 
       const response = await this.qwenClient.chat.completions.create(
@@ -214,7 +214,7 @@ export class OcrService {
           response_format: { type: 'json_object' },
         },
         {
-          timeout: 60000, // Увеличиваем тайм-аут для OCR модели
+          timeout: 60000, // Увеличиваем тайм-аут до 2 минут для больших изображений
         },
       );
 
