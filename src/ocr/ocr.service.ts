@@ -5,8 +5,10 @@ import * as sharp from 'sharp';
 
 // Константы моделей Qwen VL
 const QWEN_VL_MODELS = {
-  FAST: 'qwen-vl-plus', // Быстрая модель
-  LARGE: 'qwen-vl-max', // Медленная но мощная модель
+  OCR: 'qwen-vl-ocr', // Специализированная OCR модель
+  OCR_LATEST: 'qwen-vl-ocr-2025-08-28', // Последняя версия с улучшенной локализацией текста
+  FAST: 'qwen-vl-plus', // Быстрая модель (fallback)
+  LARGE: 'qwen-vl-max', // Медленная но мощная модель (fallback)
 };
 
 @Injectable()
@@ -76,6 +78,7 @@ export class OcrService {
 
   /**
    * Распознает текст на изображении (URL или файл)
+   * Использует специализированную qwen-vl-ocr модель
    */
   async recognizeText(
     imageUrl?: string,
@@ -85,12 +88,14 @@ export class OcrService {
     const startTime = Date.now();
 
     try {
-      // Выбираем модель в зависимости от режима
-      const model = useFastMode ? QWEN_VL_MODELS.FAST : QWEN_VL_MODELS.LARGE;
-      const maxTokens = 8000;
+      // Используем специализированную OCR модель
+      const model = useFastMode
+        ? QWEN_VL_MODELS.OCR
+        : QWEN_VL_MODELS.OCR_LATEST;
+      const maxTokens = 4096; // Стандартный лимит для qwen-vl-ocr
 
       this.logger.log(
-        `Распознавание текста (${useFastMode ? 'быстрый' : 'точный'} режим)`,
+        `OCR распознавание (${useFastMode ? 'базовая' : 'улучшенная'} модель): ${model}`,
       );
 
       let imageSource: string;
@@ -159,41 +164,57 @@ export class OcrService {
         );
       }
 
-      const systemPrompt = `
+      // Максимально строгий промпт с принуждением к английским ключам
+      const ocrPrompt = `
       Ты — детерминированный извлекатель текста из изображений (OCR post-processor). 
       Твоя задача — распознать ВЕСЬ доступный текст и вернуть СТРОГО один валидный JSON-объект по схеме ниже. 
 
       Требования:
       - Ключи — человекочитаемые
       - Учитывай структуру документа
+      - Если это сплошной текст, раздели его на абзацам с разными ключами (paragraph_1, paragraph_2, ...)
 
       Если на изображении НЕТ текста: - Верни: {"error": "no_text_found", "message": "На изображении не найден читаемый текст"} Если изображение нечеткое: - Верни: {"error": "image_unclear", "message": "Изображение слишком размытое для распознавания"} НИКОГДА не добавляй объяснения вне JSON. Ответ должен начинаться с { и заканчиваться на }.`;
+
+      // Настройки изображения для qwen-vl-ocr
+      const imageSettings = {
+        min_pixels: 28 * 28 * 4, // Минимальный порог пикселей
+        max_pixels: 28 * 28 * 8192, // Максимальный порог пикселей
+      };
 
       const response = await this.qwenClient.chat.completions.create(
         {
           model: model,
           messages: [
             {
+              role: 'system',
+              content: ocrPrompt,
+            },
+            {
               role: 'user',
               content: [
+                {
+                  type: 'text',
+                  text: ocrPrompt,
+                },
                 {
                   type: 'image_url',
                   image_url: {
                     url: imageSource,
+                    // Настройки для qwen-vl-ocr модели
+                    ...imageSettings,
                   },
-                },
-                {
-                  type: 'text',
-                  text: systemPrompt,
                 },
               ],
             },
           ],
           max_tokens: maxTokens,
-          temperature: 0.0, // Минимальная температура для быстрого и детерминированного ответа
+          temperature: 0.0, // Детерминированный результат для OCR
+          // Добавляем дополнительные параметры для контроля языка
+          response_format: { type: 'json_object' },
         },
         {
-          timeout: 45000, // Уменьшаем тайм-аут для ускорения
+          timeout: 60000, // Увеличиваем тайм-аут для OCR модели
         },
       );
 
@@ -221,6 +242,8 @@ export class OcrService {
           );
           return jsonResult; // Возвращаем ошибку как валидный JSON
         }
+
+        this.logger.log('Результат OCR успешно обработан');
         return jsonResult;
       } catch (parseError) {
         this.logger.warn(
