@@ -13,9 +13,10 @@ export class ForgotPasswordDto {
   @ApiProperty({
     description: 'Тип приложения, от которого приходит запрос',
     example: 'doc-scan',
-    enum: ['doc-scan'],
+    enum: ['doc-scan', 'taro'],
   })
   @IsNotEmpty({ message: 'Тип приложения обязателен' })
-  @IsIn(['doc-scan'], { message: 'Поддерживаемые типы приложений: doc-scan' })
+  // eslint-disable-next-line prettier/prettier
+  @IsIn(['doc-scan', 'taro'], { message: 'Поддерживаемые типы приложений: doc-scan, taro' })
   appType: string;
 }
