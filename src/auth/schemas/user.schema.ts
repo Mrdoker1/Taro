@@ -5,12 +5,11 @@ import { Roles } from '../roles'; // Import roles
 
 @Schema({ timestamps: true }) // Add timestamps for createdAt and updatedAt
 export class User {
-  @Prop({ required: true, unique: true })
+  @Prop({ required: false }) // username теперь опциональный
   @IsString()
-  @IsNotEmpty()
-  username: string;
+  username?: string;
 
-  @Prop({ required: true, unique: true })
+  @Prop({ required: true })
   @IsEmail()
   @IsNotEmpty()
   email: string;
@@ -27,8 +26,8 @@ export class User {
   @Prop({ default: false }) // По умолчанию аккаунт не активирован
   isActive: boolean;
 
-  @Prop({ required: false }) // Тип приложения от которого зарегистрирован пользователь
-  appType?: string;
+  @Prop({ required: true }) // Тип приложения теперь обязателен
+  appType: string;
 
   @Prop({ required: false }) // Дата истечения подписки (опционально)
   subscriptionExpiresAt?: Date;
@@ -42,4 +41,7 @@ export class User {
 
 export type UserDocument = User & Document;
 export const UserSchema = SchemaFactory.createForClass(User);
-UserSchema.index({ username: 1, email: 1 }); // Add indexing for username and email
+
+// Единственный уникальный индекс: email + appType
+// Это позволяет использовать один и тот же email для разных приложений
+UserSchema.index({ email: 1, appType: 1 }, { unique: true });

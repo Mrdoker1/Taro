@@ -10,10 +10,13 @@ import {
 import { Roles } from '../roles'; // Import the roles
 
 export class CreateUserDto {
-  @ApiProperty({ description: 'Имя пользователя' })
+  @ApiProperty({
+    description: 'Имя пользователя (опционально)',
+    required: false,
+  })
   @IsString()
-  @IsNotEmpty()
-  readonly username: string;
+  @IsOptional()
+  readonly username?: string;
 
   @ApiProperty({ description: 'Email пользователя' })
   @IsEmail()
@@ -40,9 +43,13 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'Тип приложения от которого регистрируется пользователь',
     example: 'doc-scan',
-    required: false,
+    enum: ['doc-scan', 'taro'],
+    required: true,
   })
   @IsString()
-  @IsOptional()
-  readonly appType?: string;
+  @IsNotEmpty()
+  @IsIn(['doc-scan', 'taro'], {
+    message: 'appType must be either doc-scan or taro',
+  })
+  readonly appType: string;
 }
