@@ -27,8 +27,13 @@ export class Horoscope extends Document {
   @Prop({ required: true })
   number: number;
 
-  @Prop({ required: true, default: 'russian' })
+  @Prop({ required: true })
   lang: string;
 }
 
 export const HoroscopeSchema = SchemaFactory.createForClass(Horoscope);
+
+// Индексы для оптимизации поиска
+HoroscopeSchema.index({ sign: 1, date: 1, lang: 1 });
+HoroscopeSchema.index({ sign: 1, week: 1, lang: 1 });
+HoroscopeSchema.index({ sign: 1, month: 1, lang: 1 });
