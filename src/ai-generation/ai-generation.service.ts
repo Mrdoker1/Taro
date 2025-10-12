@@ -136,8 +136,16 @@ export class AiGenerationService {
       if (dto.horoscopeMonth) {
         userPrompt = `Месяц гороскопа: ${dto.horoscopeMonth}\n${userPrompt}`;
       }
-      if (dto.responseLang && dto.responseLang !== 'ru') {
-        userPrompt = `${userPrompt}\n\nОтветь на ${dto.responseLang} языке.`;
+      if (dto.responseLang) {
+        const langMap: Record<string, string> = {
+          russian: 'русском',
+          english: 'английском',
+          ru: 'русском',
+          en: 'английском',
+        };
+        const langName =
+          langMap[dto.responseLang.toLowerCase()] || dto.responseLang;
+        userPrompt = `${userPrompt}\n\nОтветь на ${langName} языке.`;
       }
 
       let baseResult: string;
