@@ -145,7 +145,17 @@ export class AiGenerationService {
         };
         const langName =
           langMap[dto.responseLang.toLowerCase()] || dto.responseLang;
-        userPrompt = `${userPrompt}\n\nОтветь на ${langName} языке.`;
+
+        // Определяем язык для инструкций
+        const isEnglish =
+          dto.responseLang.toLowerCase() === 'english' ||
+          dto.responseLang.toLowerCase() === 'en';
+
+        if (isEnglish) {
+          userPrompt = `${userPrompt}\n\nIMPORTANT: Reply in English language. ALL text fields including color name must be in English (e.g., "crimson#DC143C", NOT "малиновый#DC143C").`;
+        } else {
+          userPrompt = `${userPrompt}\n\nВАЖНО: Отвечай на ${langName} языке. ВСЕ текстовые поля включая название цвета должны быть на русском (например: "малиновый#DC143C", НЕ "crimson#DC143C").`;
+        }
       }
 
       let baseResult: string;
