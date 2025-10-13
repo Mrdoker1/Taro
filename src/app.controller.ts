@@ -28,8 +28,9 @@ export class AppController {
   getDeleteAccountForm(
     @Res() res: Response,
     @Query('success') success?: string,
+    @Query('app') app?: string,
   ) {
-    const html = this.templateService.getDeleteAccountTemplate(success);
+    const html = this.templateService.getDeleteAccountTemplate(success, app);
     res.setHeader('Content-Type', 'text/html');
     res.send(html);
   }
