@@ -17,6 +17,13 @@ export class AppController {
     res.send(html);
   }
 
+  @Get('privacy/seluna')
+  getSelunaPrivacyPolicy(@Res() res: Response) {
+    const html = this.templateService.getPrivacyPolicySelunaTemplate();
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  }
+
   @Get('privacy/delete-account')
   getDeleteAccountForm(
     @Res() res: Response,
