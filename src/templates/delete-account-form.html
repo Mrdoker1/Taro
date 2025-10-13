@@ -49,12 +49,18 @@
 function updateSubject() {
     const appSelect = document.getElementById('app');
     const subjectInput = document.getElementById('subject');
-    const selectedApp = appSelect.value;
+    if (!appSelect || !subjectInput) return;
     
+    const selectedApp = appSelect.value;
     if (selectedApp) {
         subjectInput.value = selectedApp + ' - Account Deletion Request';
     } else {
         subjectInput.value = 'Account Deletion Request';
     }
 }
+
+// Update subject on page load if app is already selected
+document.addEventListener('DOMContentLoaded', function() {
+    updateSubject();
+});
 </script>
