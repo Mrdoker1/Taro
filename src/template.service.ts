@@ -13,6 +13,10 @@ export class TemplateService {
     return this.getTemplate('privacy-policy');
   }
 
+  getPrivacyPolicySelunaTemplate(): string {
+    return this.getTemplate('privacy-policy-seluna');
+  }
+
   getDeleteAccountTemplate(success?: string): string {
     const template = this.getTemplate('delete-account');
 

@@ -1,5 +1,14 @@
 <form action="https://formspree.io/f/mnngaygn" method="POST">
     <div class="form-group">
+        <label for="app">Application *</label>
+        <select id="app" name="app" required onchange="updateSubject()">
+            <option value="">Select an application</option>
+            <option value="Smart Doc Scanner">Smart Doc Scanner</option>
+            <option value="Seluna App">Seluna App</option>
+        </select>
+    </div>
+
+    <div class="form-group">
         <label for="email">Your Email Address *</label>
         <input type="email" id="email" name="email" required 
                placeholder="Enter the email associated with your account">
@@ -30,8 +39,22 @@
         </label>
     </div>
 
-    <input type="hidden" name="_subject" value="Smart Doc Scanner - Account Deletion Request">
+    <input type="hidden" id="subject" name="_subject" value="Account Deletion Request">
     <input type="hidden" name="_next" value="https://taro.ru/privacy/delete-account?success=true">
     
     <button type="submit" class="submit-btn">Send Deletion Request</button>
 </form>
+
+<script>
+function updateSubject() {
+    const appSelect = document.getElementById('app');
+    const subjectInput = document.getElementById('subject');
+    const selectedApp = appSelect.value;
+    
+    if (selectedApp) {
+        subjectInput.value = selectedApp + ' - Account Deletion Request';
+    } else {
+        subjectInput.value = 'Account Deletion Request';
+    }
+}
+</script>
