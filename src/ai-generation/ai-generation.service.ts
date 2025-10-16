@@ -76,13 +76,59 @@ export class AiGenerationService {
   }
 
   /**
+   * Генерация с автоматической перегенерацией при невалидном JSON
+   */
+  private async generateWithRetry(
+    dto: GenerateRequestDto,
+    attempt: number = 1,
+    maxAttempts: number = 3,
+  ): Promise<any> {
+    const startTime = Date.now();
+
+    try {
+      const result = await this.performGeneration(dto, startTime);
+      return result;
+    } catch (error) {
+      if (attempt < maxAttempts && error.message?.includes('JSON')) {
+        this.logger.warn(
+          `Попытка ${attempt}/${maxAttempts} неудачна (невалидный JSON), перегенерируем...`,
+        );
+        return this.generateWithRetry(dto, attempt + 1, maxAttempts);
+      }
+
+      // Если все попытки исчерпаны или другая ошибка
+      if (error.message?.includes('JSON') && attempt >= maxAttempts) {
+        this.logger.error(
+          `Все ${maxAttempts} попытки генерации неудачны - возвращаем ошибку`,
+        );
+        return {
+          error: true,
+          message:
+            'Не удалось получить корректный ответ после 3 попыток. Попробуйте еще раз.',
+          attempts: maxAttempts,
+        };
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Основной метод для генерации контента через выбранный AI провайдер
    * @param dto Данные запроса
    * @returns Результат генерации (возвращает тот же формат, что и DeepSeek)
    */
   async generate(dto: GenerateRequestDto): Promise<any> {
-    const startTime = Date.now();
+    return this.generateWithRetry(dto);
+  }
 
+  /**
+   * Выполняет одну попытку генерации
+   */
+  private async performGeneration(
+    dto: GenerateRequestDto,
+    startTime: number,
+  ): Promise<any> {
     try {
       // Проверка на пустой запрос
       if (!dto.prompt || dto.prompt.trim() === '') {
@@ -213,7 +259,7 @@ export class AiGenerationService {
           );
       }
 
-      // Парсим ответ как JSON (как это делал DeepSeek)
+      // Парсим ответ как JSON
       try {
         let jsonString = baseResult;
 
@@ -228,13 +274,12 @@ export class AiGenerationService {
           `Сгенерирован контент: ${provider}/${model}, время: ${Date.now() - startTime}ms`,
         );
         return parsedResponse;
-      } catch {
-        // Если не удалось распарсить JSON, возвращаем ошибку
-        return {
-          error: true,
-          message: 'Не удалось получить корректный ответ в формате JSON',
-          rawResponse: baseResult,
-        };
+      } catch (parseError) {
+        // Бросаем ошибку для перегенерации
+        this.logger.warn(
+          `Невалидный JSON от ${provider}: ${parseError.message}`,
+        );
+        throw new Error(`JSON parse error: ${parseError.message}`);
       }
     } catch (error) {
       this.logger.error(
