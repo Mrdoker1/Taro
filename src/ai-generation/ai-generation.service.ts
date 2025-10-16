@@ -81,7 +81,7 @@ export class AiGenerationService {
   private async generateWithRetry(
     dto: GenerateRequestDto,
     attempt: number = 1,
-    maxAttempts: number = 3,
+    maxAttempts: number = 5,
   ): Promise<any> {
     const startTime = Date.now();
 
