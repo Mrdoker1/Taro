@@ -89,5 +89,5 @@ export const QWEN_MODELS = {
   VL_MAX: 'qwen-vl-max', // Мощная модель для работы с изображениями
 } as const;
 
-export const DEFAULT_QWEN_MODEL = QWEN_MODELS.PLUS; // Более стабильная для JSON
+export const DEFAULT_QWEN_MODEL = QWEN_MODELS.FLASH;
 export const DEFAULT_QWEN_VL_MODEL = QWEN_MODELS.VL_PLUS;
