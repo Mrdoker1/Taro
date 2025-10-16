@@ -282,10 +282,15 @@ export class AiGenerationService {
         throw new Error(`JSON parse error: ${parseError.message}`);
       }
     } catch (error) {
-      this.logger.error(
-        `Ошибка при генерации контента: ${error.message}`,
-        error.stack,
-      );
+      // Для JSON ошибок используем WARN вместо ERROR (это промежуточные ошибки)
+      if (error.message?.includes('JSON')) {
+        this.logger.warn(`JSON ошибка при генерации: ${error.message}`);
+      } else {
+        this.logger.error(
+          `Ошибка при генерации контента: ${error.message}`,
+          error.stack,
+        );
+      }
       throw error;
     }
   }
