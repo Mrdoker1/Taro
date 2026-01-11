@@ -117,19 +117,8 @@
         });
 
         function loadEditor() {
-            // Загружаем editor.html через fetch и вставляем в body
-            fetch('/course-editor/editor')
-                .then(res => res.text())
-                .then(html => {
-                    document.body.innerHTML = html;
-                    // Выполняем скрипты из editor.html
-                    const scripts = document.body.querySelectorAll('script');
-                    scripts.forEach(script => {
-                        const newScript = document.createElement('script');
-                        newScript.textContent = script.textContent;
-                        document.body.appendChild(newScript);
-                    });
-                });
+            // Перенаправляем на страницу редактора
+            window.location.href = '/course-editor/editor';
         }
 
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
