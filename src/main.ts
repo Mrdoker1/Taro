@@ -148,10 +148,12 @@ function setupStaticRoutes(app) {
   app.use('/templates', express.static(templatesPath));
   console.log(`Static templates served from: ${templatesPath}`);
 
-  // Раздача статических файлов для course-editor
-  const courseEditorViewsPath = path.join(__dirname, 'course-editor', 'views');
-  app.use('/course-editor/views', express.static(courseEditorViewsPath));
-  console.log(`Course editor views served from: ${courseEditorViewsPath}`);
+  // Раздача статических файлов для React course-editor (только в продакшене)
+  if (process.env.NODE_ENV === 'production') {
+    const courseEditorPublicPath = path.join(__dirname, 'course-editor', 'public');
+    app.use('/course-editor/assets', express.static(path.join(courseEditorPublicPath, 'assets')));
+    console.log(`Course editor assets served from: ${courseEditorPublicPath}/assets`);
+  }
 }
 
 bootstrap().catch(error => {
