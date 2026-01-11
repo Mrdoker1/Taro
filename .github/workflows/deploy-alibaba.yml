@@ -29,10 +29,15 @@ jobs:
           npm ci --no-audit --no-fund
           npm run build
 
-          # Готовим минимальный runtime-артефакт
+          # Готовим runtime-артефакт с node_modules (чтобы не устанавливать на сервере)
           rm -rf deploy_artifact
           mkdir -p deploy_artifact
-          cp -r dist package.json package-lock.json deploy_artifact/
+          
+          # Устанавливаем только production зависимости
+          rm -rf node_modules
+          npm ci --omit=dev --no-audit --no-fund
+          
+          cp -r dist node_modules package.json package-lock.json deploy_artifact/
           # .env НЕ кладём — он хранится на сервере
 
       - name: Copy artifact to server (as files)
@@ -100,9 +105,8 @@ jobs:
             [ -s .env ] || { echo ".env отсутствует или пуст — прерываю"; exit 1; }
             sed -i 's/\r$//' .env
 
-            # Очистка и установка прод-зависимостей
-            rm -rf node_modules package-lock.json
-            npm install --omit=dev --no-audit --no-fund
+            # node_modules уже в артефакте, ничего не устанавливаем
+            echo "✅ Dependencies already included in artifact"
 
             # Метка деплоя
             echo "sha=$SHA time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .deploy_info
