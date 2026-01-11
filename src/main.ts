@@ -13,7 +13,8 @@ async function bootstrap() {
   });
 
   // Trust proxy для работы за Nginx
-  app.set('trust proxy', 1);
+  const expressApp = app.getHttpAdapter().getInstance();
+  expressApp.set('trust proxy', 1);
 
   // Настройка сессий для course-editor
   app.use(
