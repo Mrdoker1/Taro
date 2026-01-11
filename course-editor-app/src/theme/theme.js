@@ -126,22 +126,31 @@ export const theme = createTheme({
           fontWeight: 600,
           fontSize: '14px',
           padding: '12px 24px',
-          '&[data-active]': {
-            borderBottomColor: '#10B981',
-            borderBottomWidth: '2px',
-            color: '#10B981',
-          },
+        },
+        tabLabel: {
+          fontWeight: 600,
         },
       }),
     },
     Switch: {
-      styles: (theme) => ({
-        track: {
-          cursor: 'pointer',
-          backgroundColor: '#27272A',
-          border: 'none',
-        },
-      }),
+      defaultProps: {
+        color: 'emerald',
+        size: 'md',
+      },
+      styles: (theme, params) => {
+        const checked = params.checked;
+        return {
+          track: {
+            cursor: 'pointer',
+            backgroundColor: checked ? '#10B981' : '#27272A',
+            border: 'none',
+          },
+          thumb: {
+            border: 'none',
+            backgroundColor: '#FFFFFF',
+          },
+        };
+      },
     },
   },
 });

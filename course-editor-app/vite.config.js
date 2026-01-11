@@ -15,6 +15,18 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+      '/prompt-template': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/spreads': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
+      '/decks': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+      },
     },
   },
   build: {

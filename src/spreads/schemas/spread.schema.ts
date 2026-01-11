@@ -45,6 +45,9 @@ export class Spread {
 
   @Prop({ required: false })
   imageURL?: string;
+
+  @Prop({ required: false })
+  promptTemplateKey?: string;
 }
 
 export type SpreadDocument = Spread & Document;

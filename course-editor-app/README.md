@@ -1,4 +1,4 @@
-# Seluna Course Editor - React App
+# Seluna Editor - React App
 
 Современный редактор курсов на React с использованием Mantine UI.
 

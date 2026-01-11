@@ -22,7 +22,7 @@ export function CourseList({ courses, selectedCourse, onSelectCourse, onCreateCo
           mb="md"
           style={{ letterSpacing: '0.5px' }}
         >
-          My Courses
+          Курсы
         </Text>
       </Box>
 

@@ -1,7 +1,11 @@
 import {
   Controller,
   Get,
+  Post,
+  Put,
+  Delete,
   Param,
+  Body,
   HttpStatus,
   HttpException,
   Logger,
@@ -21,6 +25,22 @@ export class PromptTemplatesController {
   constructor(
     private readonly promptTemplatesService: PromptTemplatesService,
   ) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Получить все шаблоны запросов' })
+  @ApiResponse({
+    status: 200,
+    description: 'Список всех шаблонов',
+    type: [PromptTemplateResponseDto],
+  })
+  async getAllTemplates(@Res() res: Response) {
+    try {
+      const templates = await this.promptTemplatesService.getAllTemplates();
+      return res.status(HttpStatus.OK).json(templates);
+    } catch (error) {
+      return this.handleError(error, res);
+    }
+  }
 
   @Get(':promptId')
   @ApiOperation({
@@ -47,14 +67,74 @@ export class PromptTemplatesController {
     @Res() res: Response,
   ) {
     try {
-      // Получаем данные от сервиса
       const template =
         await this.promptTemplatesService.getTemplateById(promptId);
-
-      // Возвращаем успешный ответ
       return res.status(HttpStatus.OK).json(template);
     } catch (error) {
-      // Обрабатываем ошибки
+      return this.handleError(error, res);
+    }
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Создать новый шаблон запроса' })
+  @ApiResponse({
+    status: 201,
+    description: 'Шаблон успешно создан',
+  })
+  async createTemplate(@Body() templateData: any, @Res() res: Response) {
+    try {
+      const template = await this.promptTemplatesService.createTemplate(templateData);
+      return res.status(HttpStatus.CREATED).json(template);
+    } catch (error) {
+      return this.handleError(error, res);
+    }
+  }
+
+  @Put(':promptId')
+  @ApiOperation({ summary: 'Обновить шаблон запроса' })
+  @ApiParam({
+    name: 'promptId',
+    required: true,
+    description: 'Идентификатор шаблона запроса',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Шаблон успешно обновлен',
+  })
+  async updateTemplate(
+    @Param('promptId') promptId: string,
+    @Body() templateData: any,
+    @Res() res: Response,
+  ) {
+    try {
+      const template = await this.promptTemplatesService.updateTemplate(promptId, templateData);
+      return res.status(HttpStatus.OK).json(template);
+    } catch (error) {
+      return this.handleError(error, res);
+    }
+  }
+
+  @Delete(':promptId')
+  @ApiOperation({ summary: 'Удалить шаблон запроса' })
+  @ApiParam({
+    name: 'promptId',
+    required: true,
+    description: 'Идентификатор шаблона запроса',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Шаблон успешно удален',
+  })
+  async deleteTemplate(
+    @Param('promptId') promptId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.promptTemplatesService.deleteTemplate(promptId);
+      return res.status(HttpStatus.OK).json({ success: true });
+    } catch (error) {
       return this.handleError(error, res);
     }
   }

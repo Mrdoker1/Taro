@@ -20,28 +20,98 @@ export class PromptTemplatesService {
   ) {}
 
   /**
+   * Получить все шаблоны запросов
+   */
+  async getAllTemplates(): Promise<PromptTemplateResponseDto[]> {
+    try {
+      const templates = await this.promptTemplateModel.find().exec();
+      return templates.map(template => this.mapToResponseDto(template));
+    } catch (error) {
+      this.logger.error(`Ошибка при получении шаблонов: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
    * Получить шаблон запроса по идентификатору
    * @param promptId Идентификатор шаблона запроса
    * @returns Информация о шаблоне запроса
    */
   async getTemplateById(promptId: string): Promise<PromptTemplateResponseDto> {
     try {
-      // Получаем шаблон запроса из базы данных
       const template = await this.promptTemplateModel
         .findOne({ key: promptId })
         .exec();
 
-      // Если шаблон не найден, генерируем ошибку
       if (!template) {
         throw new NotFoundException('Prompt template not found');
       }
 
-      // Преобразуем документ в формат ответа
       return this.mapToResponseDto(template);
     } catch (error) {
       this.logger.error(
         `Ошибка при получении шаблона запроса ${promptId}: ${error.message}`,
       );
+      throw error;
+    }
+  }
+
+  /**
+   * Создать новый шаблон
+   */
+  async createTemplate(templateData: Partial<PromptTemplate>): Promise<PromptTemplateResponseDto> {
+    try {
+      const template = new this.promptTemplateModel(templateData);
+      const saved = await template.save();
+      this.logger.log(`Создан шаблон: ${saved.key}`);
+      return this.mapToResponseDto(saved);
+    } catch (error) {
+      this.logger.error(`Ошибка при создании шаблона: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Обновить шаблон
+   */
+  async updateTemplate(promptId: string, templateData: Partial<PromptTemplate>): Promise<PromptTemplateResponseDto> {
+    try {
+      const template = await this.promptTemplateModel
+        .findOneAndUpdate(
+          { key: promptId },
+          { $set: templateData },
+          { new: true }
+        )
+        .exec();
+
+      if (!template) {
+        throw new NotFoundException('Prompt template not found');
+      }
+
+      this.logger.log(`Обновлен шаблон: ${promptId}`);
+      return this.mapToResponseDto(template);
+    } catch (error) {
+      this.logger.error(`Ошибка при обновлении шаблона ${promptId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Удалить шаблон
+   */
+  async deleteTemplate(promptId: string): Promise<void> {
+    try {
+      const result = await this.promptTemplateModel
+        .deleteOne({ key: promptId })
+        .exec();
+
+      if (result.deletedCount === 0) {
+        throw new NotFoundException('Prompt template not found');
+      }
+
+      this.logger.log(`Удален шаблон: ${promptId}`);
+    } catch (error) {
+      this.logger.error(`Ошибка при удалении шаблона ${promptId}: ${error.message}`);
       throw error;
     }
   }

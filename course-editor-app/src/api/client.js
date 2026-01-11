@@ -68,3 +68,124 @@ export const courseApi = {
     return response.data;
   },
 };
+
+// Создаем отдельный API клиент для промпт-шаблонов (без auth)
+const promptApi = axios.create({
+  baseURL: '/prompt-template',
+});
+
+export const promptTemplatesApi = {
+  // Get all templates
+  getAllTemplates: async () => {
+    const response = await promptApi.get('/');
+    return response.data;
+  },
+
+  // Get template by ID
+  getTemplate: async (key) => {
+    const response = await promptApi.get(`/${key}`);
+    return response.data;
+  },
+
+  // Create template
+  createTemplate: async (data) => {
+    const response = await promptApi.post('/', data);
+    return response.data;
+  },
+
+  // Update template
+  updateTemplate: async (key, data) => {
+    const response = await promptApi.put(`/${key}`, data);
+    return response.data;
+  },
+
+  // Delete template
+  deleteTemplate: async (key) => {
+    const response = await promptApi.delete(`/${key}`);
+    return response.data;
+  },
+};
+
+// API для раскладов
+const spreadsApiClient = axios.create({
+  baseURL: '/spreads',
+});
+
+export const spreadsApi = {
+  // Get all spreads (summary)
+  getAllSpreads: async () => {
+    const response = await spreadsApiClient.get('/?lang=ru');
+    return response.data;
+  },
+
+  // Get spread by ID (raw data for editing)
+  getSpreadRaw: async (key) => {
+    const response = await spreadsApiClient.get(`/${key}/raw`);
+    return response.data;
+  },
+
+  // Create spread
+  createSpread: async (data) => {
+    const response = await spreadsApiClient.post('/', data);
+    return response.data;
+  },
+
+  // Update spread
+  updateSpread: async (key, data) => {
+    const response = await spreadsApiClient.put(`/${key}`, data);
+    return response.data;
+  },
+
+  // Delete spread
+  deleteSpread: async (key) => {
+    const response = await spreadsApiClient.delete(`/${key}`);
+    return response.data;
+  },
+};
+
+// Decks API client
+const decksApiClient = axios.create({
+  baseURL: '/decks',
+});
+
+// Add auth token to decks requests
+decksApiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('editor-token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Decks API
+export const decksApi = {
+  // Get all decks
+  getAllDecks: async () => {
+    const response = await decksApiClient.get('?lang=ru');
+    return response.data;
+  },
+  
+  // Get deck raw data
+  getDeckRaw: async (key) => {
+    const response = await decksApiClient.get(`/${key}/raw`);
+    return response.data;
+  },
+  
+  // Create deck
+  createDeck: async (deckData) => {
+    const response = await decksApiClient.post('/', deckData);
+    return response.data;
+  },
+  
+  // Update deck
+  updateDeck: async (key, deckData) => {
+    const response = await decksApiClient.put(`/${key}`, deckData);
+    return response.data;
+  },
+  
+  // Delete deck
+  deleteDeck: async (key) => {
+    const response = await decksApiClient.delete(`/${key}`);
+    return response.data;
+  },
+};
