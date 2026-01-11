@@ -30,6 +30,7 @@ export class CourseEditorController {
     }
     
     // В продакшене отдаем собранное React приложение
+    // process.cwd() это корень проекта (/srv/myapp/repo)
     const publicPath = path.join(process.cwd(), 'dist', 'course-editor', 'public');
     return res.sendFile(path.join(publicPath, 'index.html'));
   }
