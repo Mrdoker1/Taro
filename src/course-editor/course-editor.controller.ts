@@ -21,31 +21,30 @@ export class CourseEditorController {
 
   // Serve HTML page
   @Get()
-  getEditorPage(@Res() res: Response, @Session() session: any) {
-    console.log('📄 GET /course-editor - Session:', {
-      id: session.id,
-      authenticated: session.authenticated,
-    });
-
+  getEditorPage(@Res() res: Response) {
     const isDevelopment = process.env.NODE_ENV !== 'production';
     const viewsPath = isDevelopment
       ? path.join(process.cwd(), 'src', 'course-editor', 'views')
       : path.join(process.cwd(), 'dist', 'course-editor', 'views');
 
-    if (!session.authenticated) {
-      console.log('❌ Not authenticated, serving login page');
-      return res.sendFile(path.join(viewsPath, 'login.html'));
-    }
-    console.log('✅ Authenticated, serving editor page');
+    // Всегда отдаем login.html, авторизация проверяется на клиенте через token
+    return res.sendFile(path.join(viewsPath, 'login.html'));
+  }
+
+  // Serve editor HTML (for loading via fetch)
+  @Get('editor')
+  getEditorHTML(@Res() res: Response) {
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const viewsPath = isDevelopment
+      ? path.join(process.cwd(), 'src', 'course-editor', 'views')
+      : path.join(process.cwd(), 'dist', 'course-editor', 'views');
+
     return res.sendFile(path.join(viewsPath, 'editor.html'));
   }
 
   // Login
   @Post('login')
-  login(
-    @Body() body: { username: string; password: string },
-    @Session() session: any,
-  ) {
+  login(@Body() body: { username: string; password: string }) {
     console.log('🔐 Login attempt:', body.username);
     const isValid = this.courseEditorService.validateCredentials(
       body.username,
@@ -57,34 +56,37 @@ export class CourseEditorController {
       throw new HttpException('Invalid credentials', HttpStatus.UNAUTHORIZED);
     }
 
-    session.authenticated = true;
-    console.log('✅ Login successful, session:', session.id);
-    return { success: true };
+    // Генерируем простой токен (timestamp + secret)
+    const token = Buffer.from(
+      `${body.username}:${Date.now()}:tarot-editor-secret`,
+    ).toString('base64');
+    console.log('✅ Login successful, token generated');
+    return { success: true, token };
   }
 
   // Logout
   @Post('logout')
-  logout(@Session() session: any) {
-    session.authenticated = false;
+  logout() {
     return { success: true };
   }
 
   // Get all courses
   @Get('api/courses')
-  getAllCourses(@Session() session: any) {
-    console.log('📋 Session state:', { authenticated: session.authenticated, sessionID: session.id });
-    if (!session.authenticated) {
+  getAllCourses(@Headers('authorization') auth: string) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     const courses = this.courseEditorService.getAllCourses();
-    console.log('📚 Found courses:', courses);
     return courses;
   }
 
   // Get course content (raw TypeScript)
   @Get('api/courses/:slug/raw')
-  getCourseRaw(@Param('slug') slug: string, @Session() session: any) {
-    if (!session.authenticated) {
+  getCourseRaw(
+    @Param('slug') slug: string,
+    @Headers('authorization') auth: string,
+  ) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
@@ -97,8 +99,11 @@ export class CourseEditorController {
 
   // Get course data (parsed JSON)
   @Get('api/courses/:slug')
-  getCourse(@Param('slug') slug: string, @Session() session: any) {
-    if (!session.authenticated) {
+  getCourse(
+    @Param('slug') slug: string,
+    @Headers('authorization') auth: string,
+  ) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
@@ -114,9 +119,9 @@ export class CourseEditorController {
   saveCourseRaw(
     @Param('slug') slug: string,
     @Body() body: { content: string },
-    @Session() session: any,
+    @Headers('authorization') auth: string,
   ) {
-    if (!session.authenticated) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
@@ -132,9 +137,9 @@ export class CourseEditorController {
   async saveCourse(
     @Param('slug') slug: string,
     @Body() body: { data: any },
-    @Session() session: any,
+    @Headers('authorization') auth: string,
   ) {
-    if (!session.authenticated) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
@@ -147,8 +152,11 @@ export class CourseEditorController {
 
   // Create new course
   @Post('api/courses')
-  async createCourse(@Body() body: { slug: string }, @Session() session: any) {
-    if (!session.authenticated) {
+  async createCourse(
+    @Body() body: { slug: string },
+    @Headers('authorization') auth: string,
+  ) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
@@ -161,8 +169,11 @@ export class CourseEditorController {
 
   // Delete course
   @Delete('api/courses/:slug')
-  async deleteCourse(@Param('slug') slug: string, @Session() session: any) {
-    if (!session.authenticated) {
+  async deleteCourse(
+    @Param('slug') slug: string,
+    @Headers('authorization') auth: string,
+  ) {
+    if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {

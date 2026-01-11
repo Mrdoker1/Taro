@@ -25,8 +25,9 @@ async function bootstrap() {
       cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: true, // Работает через HTTPS reverse proxy
+        secure: false, // Отключаем secure, так как Nginx терминирует SSL
         sameSite: 'lax',
+        path: '/',
       },
       proxy: true, // Важно для работы за reverse proxy
     }),

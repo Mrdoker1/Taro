@@ -107,6 +107,31 @@
     </div>
 
     <script>
+        // Проверяем токен при загрузке
+        window.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('editor-token');
+            if (token) {
+                // Если токен есть, загружаем редактор
+                loadEditor();
+            }
+        });
+
+        function loadEditor() {
+            // Загружаем editor.html через fetch и вставляем в body
+            fetch('/course-editor/editor')
+                .then(res => res.text())
+                .then(html => {
+                    document.body.innerHTML = html;
+                    // Выполняем скрипты из editor.html
+                    const scripts = document.body.querySelectorAll('script');
+                    scripts.forEach(script => {
+                        const newScript = document.createElement('script');
+                        newScript.textContent = script.textContent;
+                        document.body.appendChild(newScript);
+                    });
+                });
+        }
+
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
@@ -115,30 +140,26 @@
             const errorDiv = document.getElementById('error');
             
             try {
-                console.log('Sending login request...');
                 const response = await fetch('/course-editor/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    credentials: 'include', // Важно для сохранения сессии
                     body: JSON.stringify({ username, password }),
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Login response:', data);
-                    console.log('Redirecting to /course-editor...');
-                    window.location.href = '/course-editor';
+                    if (data.token) {
+                        // Сохраняем токен в localStorage
+                        localStorage.setItem('editor-token', data.token);
+                        // Загружаем редактор
+                        loadEditor();
+                    }
                 } else {
-                    console.error('Login failed:', response.status);
                     errorDiv.style.display = 'block';
                 }
             } catch (error) {
-                console.error('Login error:', error);
                 errorDiv.style.display = 'block';
             }
         });

@@ -378,10 +378,30 @@
         let courseData = null;
         let isRawMode = false;
         
+        // Получить заголовки с токеном
+        function getAuthHeaders() {
+            const token = localStorage.getItem('editor-token');
+            return {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+            };
+        }
+        
+        // Проверить авторизацию
+        function checkAuth() {
+            const token = localStorage.getItem('editor-token');
+            if (!token) {
+                window.location.href = '/course-editor';
+            }
+        }
+        
+        // Вызываем при загрузке
+        checkAuth();
+        
         async function loadCourses() {
             try {
                 const response = await fetch('/course-editor/api/courses', {
-                    credentials: 'include'
+                    headers: getAuthHeaders()
                 });
                 const courses = await response.json();
                 
@@ -399,7 +419,7 @@
         async function loadCourse(slug) {
             try {
                 const response = await fetch(`/course-editor/api/courses/${slug}`, {
-                    credentials: 'include'
+                    headers: getAuthHeaders()
                 });
                 const result = await response.json();
                 
@@ -736,7 +756,7 @@
         async function renderRawEditor() {
             try {
                 const response = await fetch(`/course-editor/api/courses/${currentCourse}/raw`, {
-                    credentials: 'include'
+                    headers: getAuthHeaders()
                 });
                 const result = await response.json();
                 
@@ -757,14 +777,14 @@
                 if (isRawMode) {
                     const content = document.getElementById('rawEditor').value;
                     response = await fetch(`/course-editor/api/courses/${currentCourse}/raw`, {
-                        method: 'PUT', credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        method: 'PUT',
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({ content }),
                     });
                 } else {
                     response = await fetch(`/course-editor/api/courses/${currentCourse}`, {
-                        method: 'PUT', credentials: 'include',
-                        headers: { 'Content-Type': 'application/json' },
+                        method: 'PUT',
+                        headers: getAuthHeaders(),
                         body: JSON.stringify({ data: courseData }),
                     });
                 }
@@ -791,8 +811,8 @@
             
             try {
                 const response = await fetch('/course-editor/api/courses', {
-                    method: 'POST', credentials: 'include',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST',
+                    headers: getAuthHeaders(),
                     body: JSON.stringify({ slug }),
                 });
                 
@@ -817,7 +837,8 @@
             
             try {
                 const response = await fetch(`/course-editor/api/courses/${currentCourse}`, {
-                    method: 'DELETE', credentials: 'include',
+                    method: 'DELETE',
+                    headers: getAuthHeaders(),
                 });
                 
                 if (response.ok) {
@@ -840,7 +861,7 @@
         }
         
         async function logout() {
-            await fetch('/course-editor/logout', { method: 'POST', credentials: 'include' });
+            localStorage.removeItem('editor-token');
             window.location.href = '/course-editor';
         }
         
