@@ -19,27 +19,19 @@ import * as path from 'path';
 export class CourseEditorController {
   constructor(private readonly courseEditorService: CourseEditorService) {}
 
-  // Serve HTML page
+  // Serve React app
   @Get()
   getEditorPage(@Res() res: Response) {
     const isDevelopment = process.env.NODE_ENV !== 'production';
-    const viewsPath = isDevelopment
-      ? path.join(process.cwd(), 'src', 'course-editor', 'views')
-      : path.join(process.cwd(), 'dist', 'course-editor', 'views');
-
-    // Всегда отдаем login.html, авторизация проверяется на клиенте через token
-    return res.sendFile(path.join(viewsPath, 'login.html'));
-  }
-
-  // Serve editor HTML (for loading via fetch)
-  @Get('editor')
-  getEditorHTML(@Res() res: Response) {
-    const isDevelopment = process.env.NODE_ENV !== 'production';
-    const viewsPath = isDevelopment
-      ? path.join(process.cwd(), 'src', 'course-editor', 'views')
-      : path.join(process.cwd(), 'dist', 'course-editor', 'views');
-
-    return res.sendFile(path.join(viewsPath, 'editor.html'));
+    
+    if (isDevelopment) {
+      // В режиме разработки редирект на Vite dev server
+      return res.redirect('http://localhost:3001');
+    }
+    
+    // В продакшене отдаем собранное React приложение
+    const publicPath = path.join(process.cwd(), 'dist', 'course-editor', 'public');
+    return res.sendFile(path.join(publicPath, 'index.html'));
   }
 
   // Login
