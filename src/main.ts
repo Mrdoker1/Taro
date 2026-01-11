@@ -12,6 +12,9 @@ async function bootstrap() {
     rawBody: true,
   });
 
+  // Trust proxy для работы за Nginx
+  app.set('trust proxy', 1);
+
   // Настройка сессий для course-editor
   app.use(
     session({
@@ -21,9 +24,10 @@ async function bootstrap() {
       cookie: {
         maxAge: 24 * 60 * 60 * 1000, // 24 hours
         httpOnly: true,
-        secure: true, // Всегда true, так как используем HTTPS через reverse proxy
+        secure: true, // Работает через HTTPS reverse proxy
         sameSite: 'lax',
       },
+      proxy: true, // Важно для работы за reverse proxy
     }),
   );
 
