@@ -15,6 +15,7 @@ import { HoroscopeModule } from './horoscope/horoscope.module';
 import { OcrModule } from './ocr/ocr.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CoursesModule } from './courses/courses.module';
+import { CourseEditorModule } from './course-editor/course-editor.module';
 import { TemplateService } from './template.service';
 
 @Module({
@@ -31,6 +32,7 @@ import { TemplateService } from './template.service';
     OcrModule,
     PaymentsModule,
     CoursesModule,
+    CourseEditorModule,
   ],
   providers: [AppService, HealthService, TemplateService],
 })

@@ -1,2 +1,2 @@
-export { basicTaroCourse } from './basic-tarot.course';
-export { advancedTaroCourse } from './advanced-tarot.course';
+export { advancedTarotCourse } from './advanced-tarot.course';
+export { basicTarotCourse } from './basic-tarot.course';

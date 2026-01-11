@@ -1,6 +1,6 @@
 import { Course } from '../schemas/course.schema';
 
-export const basicTaroCourse: Partial<Course> = {
+export const basicTarotCourse: Partial<Course> = {
   slug: 'basic-tarot',
   coverImageUrl:
     'https://raw.githubusercontent.com/metabismuth/tarot-json/master/cards/m01.jpg',

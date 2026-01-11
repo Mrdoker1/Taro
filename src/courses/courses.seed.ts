@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Course, CourseDocument } from './schemas/course.schema';
-import { basicTaroCourse, advancedTaroCourse } from './data';
+import { basicTarotCourse, advancedTarotCourse } from './data';
 
 @Injectable()
 export class CoursesSeed {
@@ -49,6 +49,6 @@ export class CoursesSeed {
    * Возвращает данные для начального заполнения
    */
   private getSeedData(): Partial<Course>[] {
-    return [basicTaroCourse, advancedTaroCourse];
+    return [basicTarotCourse, advancedTarotCourse];
   }
 }

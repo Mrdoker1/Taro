@@ -12,6 +12,14 @@
       {
         "include": "templates/**/*",
         "outDir": "dist"
+      },
+      {
+        "include": "courses/data/**/*.course.ts",
+        "outDir": "dist"
+      },
+      {
+        "include": "course-editor/views/**/*",
+        "outDir": "dist"
       }
     ]
   }

@@ -4,12 +4,27 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
 import { ValidationPipe } from '@nestjs/common';
 import * as express from 'express';
+import * as session from 'express-session';
 import * as path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
     rawBody: true,
   });
+
+  // Настройка сессий для course-editor
+  app.use(
+    session({
+      secret: 'tarot-course-editor-secret-key-2024',
+      resave: false,
+      saveUninitialized: false,
+      cookie: {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+      },
+    }),
+  );
 
   // Увеличиваем лимит для загрузки файлов до 100MB (для очень больших фото с телефонов)
   app.use(express.json({ limit: '100mb' }));
@@ -123,11 +138,13 @@ function setupSwagger(app) {
 function setupStaticRoutes(app) {
   // Раздача статических файлов для страниц сброса пароля
   const templatesPath = path.join(__dirname, 'templates');
-
-  // Настраиваем статический middleware для папки templates
   app.use('/templates', express.static(templatesPath));
-
   console.log(`Static templates served from: ${templatesPath}`);
+
+  // Раздача статических файлов для course-editor
+  const courseEditorViewsPath = path.join(__dirname, 'course-editor', 'views');
+  app.use('/course-editor/views', express.static(courseEditorViewsPath));
+  console.log(`Course editor views served from: ${courseEditorViewsPath}`);
 }
 
 bootstrap().catch(error => {
