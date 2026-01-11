@@ -22,14 +22,21 @@ export class CourseEditorController {
   // Serve HTML page
   @Get()
   getEditorPage(@Res() res: Response, @Session() session: any) {
+    console.log('📄 GET /course-editor - Session:', {
+      id: session.id,
+      authenticated: session.authenticated,
+    });
+
     const isDevelopment = process.env.NODE_ENV !== 'production';
     const viewsPath = isDevelopment
       ? path.join(process.cwd(), 'src', 'course-editor', 'views')
       : path.join(process.cwd(), 'dist', 'course-editor', 'views');
 
     if (!session.authenticated) {
+      console.log('❌ Not authenticated, serving login page');
       return res.sendFile(path.join(viewsPath, 'login.html'));
     }
+    console.log('✅ Authenticated, serving editor page');
     return res.sendFile(path.join(viewsPath, 'editor.html'));
   }
 
