@@ -116,7 +116,7 @@ jobs:
             if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
               pm2 reload "$APP_NAME" --update-env
             else
-              pm2 start /usr/bin/node --name "$APP_NAME" --time -- dist/main.js
+              pm2 start /usr/bin/node --name "$APP_NAME" --time -- dist/src/main.js
             fi
             pm2 save
 
