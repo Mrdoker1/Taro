@@ -1,0 +1,155 @@
+import { Course } from '../schemas/course.schema';
+
+export const advancedTaroCourse: Partial<Course> = {
+  slug: 'advanced-tarot',
+  coverImageUrl: 'https://i.ibb.co/xxx/advanced-tarot-cover.png',
+  level: 'advanced',
+  price: 0,
+  isPublished: true,
+  translations: {
+    ru: {
+      title: 'Продвинутое Таро',
+      description:
+        'Углубленное изучение Таро. Сложные расклады, комбинации карт, астрологические соответствия и профессиональная практика.',
+      chapters: [
+        {
+          title: 'Комбинации карт',
+          pages: [
+            {
+              title: 'Введение в комбинации',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Комбинации карт Таро\n\nКомбинации карт — это искусство читать несколько карт вместе, понимая их взаимодействие и создавая целостную историю.\n\n## Почему важны комбинации?\n\nОдна карта может иметь множество значений, но в сочетании с другими картами её смысл становится более конкретным и точным.\n\n## Основные принципы\n\n1. **Усиление** — карты усиливают друг друга\n2. **Контраст** — карты создают противоречие\n3. **Развитие** — карты показывают процесс',
+                },
+              ],
+            },
+            {
+              title: 'Старшие Арканы в комбинациях',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Старшие Арканы в комбинациях\n\nКогда в раскладе появляются несколько Старших Арканов, это указывает на **важные жизненные события** и судьбоносные моменты.\n\n## Примеры комбинаций\n\n### Маг + Императрица\nТворческое проявление, рождение идеи в материальном мире.\n\n### Влюбленные + Колесо Фортуны\nСудьбоносный выбор, который изменит жизнь.\n\n### Башня + Звезда\nПосле разрушения приходит надежда и обновление.',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Астрология и Таро',
+          pages: [
+            {
+              title: 'Планеты в Таро',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Планеты и карты Таро\n\nКаждая карта Таро связана с определенной планетой или знаком зодиака. Это помогает глубже понять энергию карты.\n\n## Планетарные соответствия Старших Арканов\n\n- **Маг** — Меркурий\n- **Верховная Жрица** — Луна\n- **Императрица** — Венера\n- **Император** — Овен\n- **Иерофант** — Телец\n- **Влюбленные** — Близнецы\n- **Колесница** — Рак\n\n## Как использовать\n\nЗнание астрологических соответствий помогает:\n1. Определить **время** событий\n2. Понять **характер** ситуации\n3. Увидеть **глубинные причины**',
+                },
+              ],
+            },
+            {
+              title: 'Стихии и масти',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Стихии в Таро\n\nЧетыре масти Младших Арканов соответствуют четырем стихиям:\n\n## Жезлы — Огонь ♈♌♐\n**Энергия:** Действие, страсть, творчество\n**Знаки:** Овен, Лев, Стрелец\n\n## Кубки — Вода ♋♏♓\n**Энергия:** Эмоции, интуиция, отношения\n**Знаки:** Рак, Скорпион, Рыбы\n\n## Мечи — Воздух ♊♎♒\n**Энергия:** Мысли, логика, конфликты\n**Знаки:** Близнецы, Весы, Водолей\n\n## Пентакли — Земля ♉♍♑\n**Энергия:** Материя, деньги, здоровье\n**Знаки:** Телец, Дева, Козерог',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Профессиональная практика',
+          pages: [
+            {
+              title: 'Этика таролога',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Этика профессионального таролога\n\nРабота с Таро требует ответственности и соблюдения этических принципов.\n\n## Основные принципы\n\n### 1. Конфиденциальность\nВся информация, полученная во время консультации, остается между вами и клиентом.\n\n### 2. Честность\nНе обещайте того, что не можете гарантировать. Таро показывает возможности, а не абсолютное будущее.\n\n### 3. Уважение\nУважайте убеждения клиента, даже если они отличаются от ваших.\n\n### 4. Границы\nНе давайте медицинских или юридических советов. Рекомендуйте обращаться к специалистам.\n\n### 5. Эмпатия\nБудьте чуткими к эмоциональному состоянию клиента.',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+    en: {
+      title: 'Advanced Tarot',
+      description:
+        'Deep dive into Tarot. Complex spreads, card combinations, astrological correspondences, and professional practice.',
+      chapters: [
+        {
+          title: 'Card Combinations',
+          pages: [
+            {
+              title: 'Introduction to Combinations',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Tarot Card Combinations\n\nCard combinations are the art of reading multiple cards together, understanding their interaction and creating a cohesive story.\n\n## Why are combinations important?\n\nOne card can have many meanings, but in combination with other cards, its meaning becomes more specific and accurate.\n\n## Basic Principles\n\n1. **Amplification** — cards strengthen each other\n2. **Contrast** — cards create contradiction\n3. **Development** — cards show a process',
+                },
+              ],
+            },
+            {
+              title: 'Major Arcana in Combinations',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Major Arcana in Combinations\n\nWhen several Major Arcana appear in a spread, it indicates **important life events** and fateful moments.\n\n## Example Combinations\n\n### Magician + Empress\nCreative manifestation, birth of an idea in the material world.\n\n### Lovers + Wheel of Fortune\nA fateful choice that will change life.\n\n### Tower + Star\nAfter destruction comes hope and renewal.',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Astrology and Tarot',
+          pages: [
+            {
+              title: 'Planets in Tarot',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    "# Planets and Tarot Cards\n\nEach Tarot card is associated with a specific planet or zodiac sign. This helps to understand the card's energy more deeply.\n\n## Planetary Correspondences of Major Arcana\n\n- **Magician** — Mercury\n- **High Priestess** — Moon\n- **Empress** — Venus\n- **Emperor** — Aries\n- **Hierophant** — Taurus\n- **Lovers** — Gemini\n- **Chariot** — Cancer\n\n## How to Use\n\nKnowledge of astrological correspondences helps:\n1. Determine **timing** of events\n2. Understand the **nature** of situation\n3. See **deeper causes**",
+                },
+              ],
+            },
+            {
+              title: 'Elements and Suits',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    '# Elements in Tarot\n\nThe four suits of Minor Arcana correspond to four elements:\n\n## Wands — Fire ♈♌♐\n**Energy:** Action, passion, creativity\n**Signs:** Aries, Leo, Sagittarius\n\n## Cups — Water ♋♏♓\n**Energy:** Emotions, intuition, relationships\n**Signs:** Cancer, Scorpio, Pisces\n\n## Swords — Air ♊♎♒\n**Energy:** Thoughts, logic, conflicts\n**Signs:** Gemini, Libra, Aquarius\n\n## Pentacles — Earth ♉♍♑\n**Energy:** Matter, money, health\n**Signs:** Taurus, Virgo, Capricorn',
+                },
+              ],
+            },
+          ],
+        },
+        {
+          title: 'Professional Practice',
+          pages: [
+            {
+              title: 'Tarot Reader Ethics',
+              blocks: [
+                {
+                  type: 'md',
+                  content:
+                    "# Ethics of Professional Tarot Reader\n\nWorking with Tarot requires responsibility and adherence to ethical principles.\n\n## Basic Principles\n\n### 1. Confidentiality\nAll information obtained during consultation remains between you and the client.\n\n### 2. Honesty\nDon't promise what you can't guarantee. Tarot shows possibilities, not absolute future.\n\n### 3. Respect\nRespect client's beliefs, even if they differ from yours.\n\n### 4. Boundaries\nDon't give medical or legal advice. Recommend consulting specialists.\n\n### 5. Empathy\nBe sensitive to client's emotional state.",
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
+};

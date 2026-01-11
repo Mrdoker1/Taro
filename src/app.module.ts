@@ -14,6 +14,7 @@ import { PromptTemplatesModule } from './prompt-templates/prompt-templates.modul
 import { HoroscopeModule } from './horoscope/horoscope.module';
 import { OcrModule } from './ocr/ocr.module';
 import { PaymentsModule } from './payments/payments.module';
+import { CoursesModule } from './courses/courses.module';
 import { TemplateService } from './template.service';
 
 @Module({
@@ -29,6 +30,7 @@ import { TemplateService } from './template.service';
     HoroscopeModule,
     OcrModule,
     PaymentsModule,
+    CoursesModule,
   ],
   providers: [AppService, HealthService, TemplateService],
 })
