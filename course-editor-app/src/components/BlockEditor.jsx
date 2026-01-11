@@ -31,9 +31,10 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
   return (
     <Paper
       p="md"
-      withBorder
       style={{
-        backgroundColor: 'var(--mantine-color-dark-8)',
+        backgroundColor: '#18181B',
+        border: '1px solid #27272A',
+        borderRadius: '8px',
       }}
     >
       <Group justify="space-between" mb="sm">
@@ -53,20 +54,36 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
           {block.type === 'md' && (
             <Button
               variant="light"
-              color="violet"
+              color="gray"
               size="sm"
               leftSection={<IconEye size={16} />}
               onClick={() => setPreviewOpened(true)}
+              styles={{
+                root: {
+                  color: '#A1A1AA',
+                  '&:hover': {
+                    backgroundColor: '#27272A',
+                  },
+                },
+              }}
             >
               Preview
             </Button>
           )}
           <Button
-            variant="light"
+            variant="subtle"
             color="red"
             size="sm"
             leftSection={<IconTrash size={16} />}
             onClick={onRemove}
+            styles={{
+              root: {
+                color: '#EF4444',
+                '&:hover': {
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                },
+              },
+            }}
           >
             Remove
           </Button>

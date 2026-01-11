@@ -1,4 +1,4 @@
-import { Paper, TextInput, Button, Stack, Group, Collapse, Text } from '@mantine/core';
+import { Paper, TextInput, Button, Stack, Group, Collapse, Text, Box, UnstyledButton } from '@mantine/core';
 import { IconPlus, IconTrash, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
 import { useState } from 'react';
 import { BlockEditor } from './BlockEditor';
@@ -30,13 +30,14 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
   return (
     <Paper
       p="md"
-      withBorder
       style={{
-        backgroundColor: 'var(--mantine-color-dark-9)',
+        backgroundColor: '#111114',
+        border: '1px solid #27272A',
+        borderRadius: '8px',
       }}
     >
       <Group justify="space-between" mb="sm">
-        <Text fw={600} size="sm" c="white">
+        <Text fw={500} size="sm" c="#FFFFFF">
           Page {pageIndex + 1}: {page.title || 'Untitled'}
         </Text>
         <Group gap="xs">
@@ -45,6 +46,15 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
             size="xs"
             leftSection={expanded ? <IconChevronUp size={14} /> : <IconChevronDown size={14} />}
             onClick={() => setExpanded(!expanded)}
+            styles={{
+              root: {
+                color: '#A1A1AA',
+                fontSize: '12px',
+                '&:hover': {
+                  backgroundColor: '#27272A',
+                },
+              },
+            }}
           >
             Blocks
           </Button>
@@ -54,6 +64,15 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
             size="xs"
             leftSection={<IconTrash size={14} />}
             onClick={onRemove}
+            styles={{
+              root: {
+                color: '#EF4444',
+                fontSize: '12px',
+                '&:hover': {
+                  backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                },
+              },
+            }}
           >
             Remove
           </Button>
@@ -78,14 +97,35 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
               onRemove={() => handleRemoveBlock(blockIndex)}
             />
           ))}
-          <Button
-            variant="light"
-            leftSection={<IconPlus size={16} />}
+          <UnstyledButton
             onClick={handleAddBlock}
-            fullWidth
+            style={{
+              width: '100%',
+              padding: '16px',
+              border: '2px dashed #27272A',
+              borderRadius: '8px',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#10B981';
+              e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#27272A';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
-            Add Block
-          </Button>
+            <IconPlus size={14} color="#71717A" />
+            <Text c="#71717A" size="xs">
+              Add Block
+            </Text>
+          </UnstyledButton>
         </Stack>
       </Collapse>
     </Paper>

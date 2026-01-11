@@ -51,7 +51,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
       case 'card':
         return (
           <Paper p="md" withBorder>
-            <Text fw={600} c="gold.6">
+            <Text fw={600} c="#10B981">
               Card: {block.cardId || 'Unknown'}
             </Text>
             <Text size="sm" c="dimmed">
@@ -74,27 +74,30 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
       onClose={onClose}
       size="90%"
       title={
-        <Text size="xl" fw={700} c="gold.6">
+        <Text size="xl" fw={700} c="#10B981">
           {translation.title}
         </Text>
       }
       styles={{
-        body: { height: 'calc(90vh - 60px)' },
+        body: { 
+          height: 'calc(90vh - 60px)',
+          padding: 0,
+        },
       }}
     >
       <Box style={{ display: 'flex', height: '100%' }}>
-        {/* Sidebar Navigation */}
-        <Box
-          style={{
-            width: 300,
-            borderRight: '1px solid var(--mantine-color-dark-6)',
-            paddingRight: 16,
-          }}
-        >
+        {/* Sidebar */}
+        <Box style={{ 
+          width: 300, 
+          borderRight: '1px solid var(--mantine-color-dark-6)',
+          padding: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+        }}>
           <Group mb="md">
             <Button
               variant={selectedLang === 'ru' ? 'filled' : 'light'}
-              color="gold"
+              color="emerald"
               onClick={() => setSelectedLang('ru')}
               size="xs"
             >
@@ -102,7 +105,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
             </Button>
             <Button
               variant={selectedLang === 'en' ? 'filled' : 'light'}
-              color="gold"
+              color="emerald"
               onClick={() => setSelectedLang('en')}
               size="xs"
             >
@@ -110,11 +113,11 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
             </Button>
           </Group>
 
-          <ScrollArea h="calc(100% - 50px)">
+          <ScrollArea style={{ flex: 1 }}>
             <Stack gap="md">
               {(translation.chapters || []).map((chapter, chapterIndex) => (
                 <Box key={chapterIndex}>
-                  <Text fw={600} c="gold.6" mb="xs">
+                  <Text fw={600} c="#10B981" mb="xs">
                     {chapter.title}
                   </Text>
                   <Stack gap="xs">
@@ -130,7 +133,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
                         color={
                           selectedPage.chapterIndex === chapterIndex &&
                           selectedPage.pageIndex === pageIndex
-                            ? 'gold'
+                            ? 'emerald'
                             : 'gray'
                         }
                         size="sm"
@@ -148,25 +151,29 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
           </ScrollArea>
         </Box>
 
-        {/* Content Area */}
-        <ScrollArea flex={1} pl="xl">
-          {currentPage ? (
-            <Box>
-              <Text size="xl" fw={700} mb="xl">
-                {currentPage.title}
-              </Text>
-              <Stack gap="xl">
-                {(currentPage.blocks || []).map((block, blockIndex) => (
-                  <Box key={blockIndex}>{renderBlock(block)}</Box>
-                ))}
-              </Stack>
+        {/* Content */}
+        <Box style={{ flex: 1 }}>
+          <ScrollArea h="100%">
+            <Box p="xl">
+              {currentPage ? (
+                <Box>
+                  <Text size="xl" fw={700} mb="xl">
+                    {currentPage.title}
+                  </Text>
+                  <Stack gap="xl">
+                    {(currentPage.blocks || []).map((block, blockIndex) => (
+                      <Box key={blockIndex}>{renderBlock(block)}</Box>
+                    ))}
+                  </Stack>
+                </Box>
+              ) : (
+                <Text c="dimmed" ta="center" mt="xl">
+                  Select a page to preview
+                </Text>
+              )}
             </Box>
-          ) : (
-            <Text c="dimmed" ta="center" mt="xl">
-              Select a page to preview
-            </Text>
-          )}
-        </ScrollArea>
+          </ScrollArea>
+        </Box>
       </Box>
     </Modal>
   );

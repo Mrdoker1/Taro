@@ -45,19 +45,28 @@ export function Login({ onLogin }) {
       }}
     >
       <Container size={420}>
-        <Title ta="center" mb="xl" c="gold.6">
+        <Title ta="center" mb="xl" c="#10B981" fw={700}>
           Seluna Course Editor
         </Title>
 
-        <Paper withBorder shadow="md" p={30} radius="md">
+        <Paper
+          shadow="xl"
+          p={40}
+          radius="lg"
+          style={{
+            backgroundColor: '#18181B',
+            border: '1px solid #27272A',
+          }}
+        >
           <form onSubmit={handleSubmit}>
-            <Stack>
+            <Stack gap="lg">
               <TextInput
                 label="Username"
                 placeholder="Enter username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
+                size="md"
               />
 
               <PasswordInput
@@ -66,11 +75,19 @@ export function Login({ onLogin }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                size="md"
               />
 
-            <Button type="submit" fullWidth loading={loading} color="gold">
-              Login
-            </Button>
+              <Button
+                type="submit"
+                fullWidth
+                loading={loading}
+                color="emerald"
+                size="md"
+                mt="md"
+              >
+                Login
+              </Button>
             </Stack>
           </form>
         </Paper>
