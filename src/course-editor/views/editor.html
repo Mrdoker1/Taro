@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seluna Course Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0E0B1D;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #1A1625;
+            color: #ffffff;
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            border-bottom: 1px solid rgba(232, 210, 140, 0.2);
+        }
+        .header h1 {
+            font-size: 24px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .header button {
+            background: rgba(232, 210, 140, 0.2);
+            color: #ffffff;
+            border: 1px solid rgba(232, 210, 140, 0.3);
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .header button:hover {
+            background: rgba(232, 210, 140, 0.3);
+        }
+        .container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 300px;
+            background: #1A1625;
+            border-right: 1px solid rgba(232, 210, 140, 0.2);
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(232, 210, 140, 0.2);
+        }
+        .sidebar-header button {
+            width: 100%;
+            padding: 12px;
+            background: #E8D28C;
+            color: #0E0B1D;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .course-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+        .course-item {
+            padding: 15px;
+            margin-bottom: 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #ffffff;
+        }
+        .course-item:hover {
+            background: rgba(232, 210, 140, 0.1);
+        }
+        .course-item.active {
+            background: #E8D28C;
+            color: #0E0B1D;
+        }
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #0E0B1D;
+            overflow: hidden;
+        }
+        .editor-toolbar {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(232, 210, 140, 0.2);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .editor-toolbar button {
+            padding: 10px 20px;
+            border: 1px solid rgba(232, 210, 140, 0.3);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .btn-save {
+            background: #8BC34A;
+            color: #0E0B1D;
+            border-color: #8BC34A;
+        }
+        .btn-save:hover {
+            background: #7CB342;
+        }
+        .btn-delete {
+            background: #ff6b6b;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #ff5252;
+        }
+        .btn-raw {
+            background: rgba(232, 210, 140, 0.2);
+            color: #ffffff;
+        }
+        .btn-raw:hover {
+            background: rgba(232, 210, 140, 0.3);
+        }
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .empty-state {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 18px;
+        }
+        .status-message {
+            padding: 10px 20px;
+            border-radius: 6px;
+            display: none;
+            margin-left: auto;
+        }
+        .status-message.success {
+            background: rgba(139, 195, 74, 0.2);
+            color: #8BC34A;
+            border: 1px solid #8BC34A;
+            display: block;
+        }
+        .status-message.error {
+            background: rgba(255, 107, 107, 0.2);
+            color: #ff6b6b;
+            border: 1px solid #ff6b6b;
+            display: block;
+        }
+        
+        /* Form Styles */
+        .form-section {
+            background: #1A1625;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(232, 210, 140, 0.2);
+        }
+        .form-section h2 {
+            margin-bottom: 15px;
+            color: #ffffff;
+            font-size: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid rgba(232, 210, 140, 0.2);
+            border-radius: 6px;
+            font-size: 14px;
+            background: #0E0B1D;
+            color: #ffffff;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #E8D28C;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(232, 210, 140, 0.2);
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .tab:hover {
+            background: rgba(232, 210, 140, 0.1);
+        }
+        .tab.active {
+            border-bottom-color: #E8D28C;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Chapters & Pages */
+        .chapters-list {
+            margin-top: 20px;
+        }
+        .chapter-item {
+            background: #1A1625;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 2px solid rgba(232, 210, 140, 0.2);
+        }
+        .chapter-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .chapter-header h3 {
+            font-size: 16px;
+            color: #ffffff;
+        }
+        .chapter-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-small {
+            padding: 5px 10px;
+            font-size: 12px;
+            border: 1px solid rgba(232, 210, 140, 0.3);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-add {
+            background: #E8D28C;
+            color: #0E0B1D;
+            border-color: #E8D28C;
+        }
+        .btn-remove {
+            background: #ff6b6b;
+            color: white;
+            border-color: #ff6b6b;
+        }
+        .btn-expand {
+            background: rgba(232, 210, 140, 0.2);
+            color: #ffffff;
+        }
+        .pages-list {
+            margin-top: 10px;
+            padding-left: 20px;
+            display: none;
+        }
+        .pages-list.expanded {
+            display: block;
+        }
+        .page-item {
+            background: #0E0B1D;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(232, 210, 140, 0.15);
+        }
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .blocks-list {
+            margin-top: 10px;
+            display: none;
+        }
+        .blocks-list.expanded {
+            display: block;
+        }
+        .block-item {
+            background: #1A1625;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            border: 1px solid rgba(232, 210, 140, 0.1);
+        }
+        textarea.markdown-editor {
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            min-height: 200px;
+        }
+        
+        .add-button {
+            width: 100%;
+            padding: 12px;
+            background: #E8D28C;
+            color: #0E0B1D;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .add-button:hover {
+            background: #d4be7a;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Seluna Course Editor</h1>
+        <div class="header-actions">
+            <button onclick="logout()">Logout</button>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button onclick="createNewCourse()">+ New Course</button>
+            </div>
+            <div class="course-list" id="courseList">
+                <!-- Courses will be loaded here -->
+            </div>
+        </div>
+        
+        <div class="editor-area">
+            <div class="editor-toolbar">
+                <button class="btn-save" onclick="saveCourse()" id="saveBtn" disabled>Save</button>
+                <button class="btn-delete" onclick="deleteCourse()" id="deleteBtn" disabled>Delete</button>
+                <button class="btn-raw" onclick="toggleRawMode()" id="rawBtn" disabled>Raw Mode</button>
+                <div class="status-message" id="statusMessage"></div>
+            </div>
+            <div class="editor-content" id="editorContent">
+                <div class="empty-state">Select a course to edit or create a new one</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentCourse = null;
+        let courseData = null;
+        let isRawMode = false;
+        
+        async function loadCourses() {
+            try {
+                const response = await fetch('/course-editor/api/courses', {
+                    credentials: 'include'
+                });
+                const courses = await response.json();
+                
+                const courseList = document.getElementById('courseList');
+                courseList.innerHTML = courses.map(slug => `
+                    <div class="course-item" onclick="loadCourse('${slug}')">
+                        ${slug}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Failed to load courses:', error);
+            }
+        }
+        
+        async function loadCourse(slug) {
+            try {
+                const response = await fetch(`/course-editor/api/courses/${slug}`, {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                currentCourse = slug;
+                courseData = result.data;
+                isRawMode = false;
+                
+                // Update UI
+                document.querySelectorAll('.course-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.textContent.trim() === slug) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                renderEditor();
+                
+                document.getElementById('saveBtn').disabled = false;
+                document.getElementById('deleteBtn').disabled = false;
+                document.getElementById('rawBtn').disabled = false;
+            } catch (error) {
+                showStatus('Failed to load course', 'error');
+            }
+        }
+        
+        function renderEditor() {
+            if (isRawMode) {
+                renderRawEditor();
+            } else {
+                renderFormEditor();
+            }
+        }
+        
+        function renderFormEditor() {
+            const content = document.getElementById('editorContent');
+            content.innerHTML = `
+                <div class="form-section">
+                    <h2>Basic Information</h2>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Slug</label>
+                            <input type="text" id="slug" value="${courseData.slug || ''}" readonly>
+                        </div>
+                        <div class="form-group">
+                            <label>Level</label>
+                            <select id="level">
+                                <option value="beginner" ${courseData.level === 'beginner' ? 'selected' : ''}>Beginner</option>
+                                <option value="intermediate" ${courseData.level === 'intermediate' ? 'selected' : ''}>Intermediate</option>
+                                <option value="advanced" ${courseData.level === 'advanced' ? 'selected' : ''}>Advanced</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Price</label>
+                            <input type="number" id="price" value="${courseData.price || 0}">
+                        </div>
+                        <div class="form-group">
+                            <label>Published</label>
+                            <select id="isPublished">
+                                <option value="true" ${courseData.isPublished ? 'selected' : ''}>Yes</option>
+                                <option value="false" ${!courseData.isPublished ? 'selected' : ''}>No</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Cover Image URL</label>
+                        <input type="text" id="coverImageUrl" value="${courseData.coverImageUrl || ''}">
+                    </div>
+                </div>
+                
+                <div class="tabs">
+                    <div class="tab active" onclick="switchTab('ru')">🇷🇺 Russian</div>
+                    <div class="tab" onclick="switchTab('en')">🇬🇧 English</div>
+                </div>
+                
+                <div id="tab-ru" class="tab-content active">
+                    ${renderTranslationForm('ru')}
+                </div>
+                
+                <div id="tab-en" class="tab-content">
+                    ${renderTranslationForm('en')}
+                </div>
+            `;
+            
+            attachFormListeners();
+        }
+        
+        function renderTranslationForm(lang) {
+            const translation = courseData.translations[lang] || { title: '', description: '', chapters: [] };
+            
+            return `
+                <div class="form-section">
+                    <h2>Course Info (${lang.toUpperCase()})</h2>
+                    <div class="form-group">
+                        <label>Title</label>
+                        <input type="text" class="translation-field" data-lang="${lang}" data-field="title" value="${translation.title || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea class="translation-field" data-lang="${lang}" data-field="description" rows="3">${translation.description || ''}</textarea>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <h2>Chapters</h2>
+                    <div class="chapters-list" id="chapters-${lang}">
+                        ${renderChapters(lang, translation.chapters || [])}
+                    </div>
+                    <button class="add-button" onclick="addChapter('${lang}')">+ Add Chapter</button>
+                </div>
+            `;
+        }
+        
+        function renderChapters(lang, chapters) {
+            return chapters.map((chapter, chapterIndex) => `
+                <div class="chapter-item" data-chapter-index="${chapterIndex}">
+                    <div class="chapter-header">
+                        <h3>Chapter ${chapterIndex + 1}: ${chapter.title || 'Untitled'}</h3>
+                        <div class="chapter-actions">
+                            <button class="btn-small btn-expand" onclick="toggleChapter('${lang}', ${chapterIndex})">Pages</button>
+                            <button class="btn-small btn-remove" onclick="removeChapter('${lang}', ${chapterIndex})">Remove</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Chapter Title</label>
+                        <input type="text" class="chapter-title" data-lang="${lang}" data-chapter="${chapterIndex}" value="${chapter.title || ''}">
+                    </div>
+                    <div class="pages-list" id="pages-${lang}-${chapterIndex}">
+                        ${renderPages(lang, chapterIndex, chapter.pages || [])}
+                    </div>
+                    <button class="add-button" onclick="addPage('${lang}', ${chapterIndex})">+ Add Page</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderPages(lang, chapterIndex, pages) {
+            return pages.map((page, pageIndex) => `
+                <div class="page-item">
+                    <div class="page-header">
+                        <strong>Page ${pageIndex + 1}: ${page.title || 'Untitled'}</strong>
+                        <div class="chapter-actions">
+                            <button class="btn-small btn-expand" onclick="togglePage('${lang}', ${chapterIndex}, ${pageIndex})">Blocks</button>
+                            <button class="btn-small btn-remove" onclick="removePage('${lang}', ${chapterIndex}, ${pageIndex})">Remove</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <input type="text" class="page-title" data-lang="${lang}" data-chapter="${chapterIndex}" data-page="${pageIndex}" value="${page.title || ''}" placeholder="Page title">
+                    </div>
+                    <div class="blocks-list" id="blocks-${lang}-${chapterIndex}-${pageIndex}">
+                        ${renderBlocks(lang, chapterIndex, pageIndex, page.blocks || [])}
+                    </div>
+                    <button class="add-button" onclick="addBlock('${lang}', ${chapterIndex}, ${pageIndex})">+ Add Block</button>
+                </div>
+            `).join('');
+        }
+        
+        function renderBlocks(lang, chapterIndex, pageIndex, blocks) {
+            return blocks.map((block, blockIndex) => `
+                <div class="block-item">
+                    <div class="page-header">
+                        <strong>Block ${blockIndex + 1} (${block.type})</strong>
+                        <button class="btn-small btn-remove" onclick="removeBlock('${lang}', ${chapterIndex}, ${pageIndex}, ${blockIndex})">Remove</button>
+                    </div>
+                    <div class="form-group">
+                        <label>Type</label>
+                        <select class="block-type" data-lang="${lang}" data-chapter="${chapterIndex}" data-page="${pageIndex}" data-block="${blockIndex}">
+                            <option value="md" ${block.type === 'md' ? 'selected' : ''}>Markdown</option>
+                            <option value="image" ${block.type === 'image' ? 'selected' : ''}>Image</option>
+                            <option value="card" ${block.type === 'card' ? 'selected' : ''}>Card</option>
+                            <option value="video" ${block.type === 'video' ? 'selected' : ''}>Video</option>
+                        </select>
+                    </div>
+                    ${renderBlockContent(lang, chapterIndex, pageIndex, blockIndex, block)}
+                </div>
+            `).join('');
+        }
+        
+        function renderBlockContent(lang, chapterIndex, pageIndex, blockIndex, block) {
+            if (block.type === 'md') {
+                return `
+                    <div class="form-group">
+                        <label>Markdown Content</label>
+                        <textarea class="markdown-editor block-content" data-lang="${lang}" data-chapter="${chapterIndex}" data-page="${pageIndex}" data-block="${blockIndex}">${block.content || ''}</textarea>
+                    </div>
+                `;
+            } else if (block.type === 'image') {
+                return `
+                    <div class="form-group">
+                        <label>Image URL</label>
+                        <input type="text" class="block-url" data-lang="${lang}" data-chapter="${chapterIndex}" data-page="${pageIndex}" data-block="${blockIndex}" value="${block.url || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Caption</label>
+                        <input type="text" class="block-caption" data-lang="${lang}" data-chapter="${chapterIndex}" data-page="${pageIndex}" data-block="${blockIndex}" value="${block.caption || ''}">
+                    </div>
+                `;
+            }
+            return '';
+        }
+        
+        function attachFormListeners() {
+            // Basic fields
+            document.getElementById('level').addEventListener('change', (e) => {
+                courseData.level = e.target.value;
+            });
+            document.getElementById('price').addEventListener('change', (e) => {
+                courseData.price = parseInt(e.target.value);
+            });
+            document.getElementById('isPublished').addEventListener('change', (e) => {
+                courseData.isPublished = e.target.value === 'true';
+            });
+            document.getElementById('coverImageUrl').addEventListener('change', (e) => {
+                courseData.coverImageUrl = e.target.value;
+            });
+            
+            // Translation fields
+            document.querySelectorAll('.translation-field').forEach(field => {
+                field.addEventListener('change', (e) => {
+                    const lang = e.target.dataset.lang;
+                    const fieldName = e.target.dataset.field;
+                    if (!courseData.translations[lang]) {
+                        courseData.translations[lang] = {};
+                    }
+                    courseData.translations[lang][fieldName] = e.target.value;
+                });
+            });
+            
+            // Chapter titles
+            document.querySelectorAll('.chapter-title').forEach(field => {
+                field.addEventListener('change', (e) => {
+                    const lang = e.target.dataset.lang;
+                    const chapterIndex = parseInt(e.target.dataset.chapter);
+                    courseData.translations[lang].chapters[chapterIndex].title = e.target.value;
+                });
+            });
+            
+            // Page titles
+            document.querySelectorAll('.page-title').forEach(field => {
+                field.addEventListener('change', (e) => {
+                    const lang = e.target.dataset.lang;
+                    const chapterIndex = parseInt(e.target.dataset.chapter);
+                    const pageIndex = parseInt(e.target.dataset.page);
+                    courseData.translations[lang].chapters[chapterIndex].pages[pageIndex].title = e.target.value;
+                });
+            });
+            
+            // Block content
+            document.querySelectorAll('.block-content, .block-url, .block-caption').forEach(field => {
+                field.addEventListener('change', (e) => {
+                    const lang = e.target.dataset.lang;
+                    const chapterIndex = parseInt(e.target.dataset.chapter);
+                    const pageIndex = parseInt(e.target.dataset.page);
+                    const blockIndex = parseInt(e.target.dataset.block);
+                    const block = courseData.translations[lang].chapters[chapterIndex].pages[pageIndex].blocks[blockIndex];
+                    
+                    if (field.classList.contains('block-content')) {
+                        block.content = e.target.value;
+                    } else if (field.classList.contains('block-url')) {
+                        block.url = e.target.value;
+                    } else if (field.classList.contains('block-caption')) {
+                        block.caption = e.target.value;
+                    }
+                });
+            });
+        }
+        
+        function switchTab(lang) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`tab-${lang}`).classList.add('active');
+        }
+        
+        function toggleChapter(lang, chapterIndex) {
+            const pages = document.getElementById(`pages-${lang}-${chapterIndex}`);
+            pages.classList.toggle('expanded');
+        }
+        
+        function togglePage(lang, chapterIndex, pageIndex) {
+            const blocks = document.getElementById(`blocks-${lang}-${chapterIndex}-${pageIndex}`);
+            blocks.classList.toggle('expanded');
+        }
+        
+        function addChapter(lang) {
+            if (!courseData.translations[lang].chapters) {
+                courseData.translations[lang].chapters = [];
+            }
+            courseData.translations[lang].chapters.push({
+                title: 'New Chapter',
+                pages: []
+            });
+            renderEditor();
+        }
+        
+        function removeChapter(lang, chapterIndex) {
+            if (confirm('Remove this chapter?')) {
+                courseData.translations[lang].chapters.splice(chapterIndex, 1);
+                renderEditor();
+            }
+        }
+        
+        function addPage(lang, chapterIndex) {
+            courseData.translations[lang].chapters[chapterIndex].pages.push({
+                title: 'New Page',
+                blocks: []
+            });
+            renderEditor();
+        }
+        
+        function removePage(lang, chapterIndex, pageIndex) {
+            if (confirm('Remove this page?')) {
+                courseData.translations[lang].chapters[chapterIndex].pages.splice(pageIndex, 1);
+                renderEditor();
+            }
+        }
+        
+        function addBlock(lang, chapterIndex, pageIndex) {
+            courseData.translations[lang].chapters[chapterIndex].pages[pageIndex].blocks.push({
+                type: 'md',
+                content: ''
+            });
+            renderEditor();
+        }
+        
+        function removeBlock(lang, chapterIndex, pageIndex, blockIndex) {
+            if (confirm('Remove this block?')) {
+                courseData.translations[lang].chapters[chapterIndex].pages[pageIndex].blocks.splice(blockIndex, 1);
+                renderEditor();
+            }
+        }
+        
+        async function renderRawEditor() {
+            try {
+                const response = await fetch(`/course-editor/api/courses/${currentCourse}/raw`, {
+                    credentials: 'include'
+                });
+                const result = await response.json();
+                
+                const content = document.getElementById('editorContent');
+                content.innerHTML = `
+                    <textarea id="rawEditor" style="width: 100%; height: 100%; min-height: 600px; padding: 15px; font-family: monospace; font-size: 14px; border: 2px solid #e0e0e0; border-radius: 6px;">${result.content}</textarea>
+                `;
+            } catch (error) {
+                showStatus('Failed to load raw content', 'error');
+            }
+        }
+        
+        async function saveCourse() {
+            if (!currentCourse) return;
+            
+            try {
+                let response;
+                if (isRawMode) {
+                    const content = document.getElementById('rawEditor').value;
+                    response = await fetch(`/course-editor/api/courses/${currentCourse}/raw`, {
+                        method: 'PUT', credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ content }),
+                    });
+                } else {
+                    response = await fetch(`/course-editor/api/courses/${currentCourse}`, {
+                        method: 'PUT', credentials: 'include',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: courseData }),
+                    });
+                }
+                
+                if (response.ok) {
+                    showStatus('Course saved successfully!', 'success');
+                } else {
+                    showStatus('Failed to save course', 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to save course', 'error');
+            }
+        }
+        
+        function toggleRawMode() {
+            isRawMode = !isRawMode;
+            renderEditor();
+            document.getElementById('rawBtn').textContent = isRawMode ? 'Form Mode' : 'Raw Mode';
+        }
+        
+        async function createNewCourse() {
+            const slug = prompt('Enter course slug (e.g., "advanced-tarot"):');
+            if (!slug) return;
+            
+            try {
+                const response = await fetch('/course-editor/api/courses', {
+                    method: 'POST', credentials: 'include',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ slug }),
+                });
+                
+                if (response.ok) {
+                    await loadCourses();
+                    await loadCourse(slug);
+                    showStatus('Course created successfully!', 'success');
+                } else {
+                    showStatus('Failed to create course', 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to create course', 'error');
+            }
+        }
+        
+        async function deleteCourse() {
+            if (!currentCourse) return;
+            
+            if (!confirm(`Are you sure you want to delete "${currentCourse}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/course-editor/api/courses/${currentCourse}`, {
+                    method: 'DELETE', credentials: 'include',
+                });
+                
+                if (response.ok) {
+                    currentCourse = null;
+                    courseData = null;
+                    document.getElementById('editorContent').innerHTML = `
+                        <div class="empty-state">Select a course to edit or create a new one</div>
+                    `;
+                    document.getElementById('saveBtn').disabled = true;
+                    document.getElementById('deleteBtn').disabled = true;
+                    document.getElementById('rawBtn').disabled = true;
+                    await loadCourses();
+                    showStatus('Course deleted successfully!', 'success');
+                } else {
+                    showStatus('Failed to delete course', 'error');
+                }
+            } catch (error) {
+                showStatus('Failed to delete course', 'error');
+            }
+        }
+        
+        async function logout() {
+            await fetch('/course-editor/logout', { method: 'POST', credentials: 'include' });
+            window.location.href = '/course-editor';
+        }
+        
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('statusMessage');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            
+            setTimeout(() => {
+                statusEl.className = 'status-message';
+            }, 3000);
+        }
+        
+        // Load courses on page load
+        loadCourses();
+    </script>
+</body>
+</html>
