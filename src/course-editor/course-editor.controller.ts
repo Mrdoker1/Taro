@@ -9,7 +9,7 @@ import {
   Res,
   HttpException,
   HttpStatus,
-  Session,
+  Headers,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { CourseEditorService } from './course-editor.service';
