@@ -150,7 +150,8 @@ function setupStaticRoutes(app) {
 
   // Раздача статических файлов для React course-editor (только в продакшене)
   if (process.env.NODE_ENV === 'production') {
-    const courseEditorPublicPath = path.join(__dirname, 'course-editor', 'public');
+    // __dirname в production это dist/src, поэтому идем на уровень выше
+    const courseEditorPublicPath = path.join(__dirname, '..', 'course-editor', 'public');
     app.use('/course-editor/assets', express.static(path.join(courseEditorPublicPath, 'assets')));
     console.log(`Course editor assets served from: ${courseEditorPublicPath}/assets`);
   }
