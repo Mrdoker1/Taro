@@ -3,26 +3,51 @@ import { AppShell, Box, Title, Button, Group, TextInput, Modal, Breadcrumbs, Anc
 import { notifications } from '@mantine/notifications';
 import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight } from '@tabler/icons-react';
 import { Login } from './components/Login';
-import { CourseList } from './components/CourseList';
+import { Sidebar } from './components/Sidebar';
 import { CourseEditor } from './components/CourseEditor';
-import { courseApi } from './api/client';
+import { DecksEditor } from './components/DecksEditor';
+import { SpreadsEditor } from './components/SpreadsEditor';
+import { PromptTemplatesEditor } from './components/PromptTemplatesEditor';
+import { courseApi, decksApi, spreadsApi, promptTemplatesApi } from './api/client';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeSection, setActiveSection] = useState('courses'); // courses, spreads, prompts
+  
+  // Courses
   const [courses, setCourses] = useState([]);
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [courseData, setCourseData] = useState(null);
   const [createModalOpened, setCreateModalOpened] = useState(false);
   const [newCourseSlug, setNewCourseSlug] = useState('');
-  const [loading, setLoading] = useState(false);
   const [previewOpened, setPreviewOpened] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Decks
+  const [decks, setDecks] = useState([]);
+  const [selectedDeck, setSelectedDeck] = useState(null);
+  const [deckData, setDeckData] = useState(null);
+  
+  // Spreads
+  const [spreads, setSpreads] = useState([]);
+  const [selectedSpread, setSelectedSpread] = useState(null);
+  const [spreadData, setSpreadData] = useState(null);
+  
+  // Prompts
+  const [prompts, setPrompts] = useState([]);
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [promptData, setPromptData] = useState(null);
+  
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('editor-token');
     if (token) {
       setIsAuthenticated(true);
       loadCourses();
+      loadDecks();
+      loadSpreads();
+      loadPrompts();
     }
   }, []);
 
@@ -32,6 +57,33 @@ function App() {
       setCourses(data);
     } catch (error) {
       console.error('Failed to load courses:', error);
+    }
+  };
+
+  const loadDecks = async () => {
+    try {
+      const data = await decksApi.getAllDecks();
+      setDecks(data);
+    } catch (error) {
+      console.error('Failed to load decks:', error);
+    }
+  };
+
+  const loadSpreads = async () => {
+    try {
+      const data = await spreadsApi.getAllSpreads();
+      setSpreads(data);
+    } catch (error) {
+      console.error('Failed to load spreads:', error);
+    }
+  };
+
+  const loadPrompts = async () => {
+    try {
+      const data = await promptTemplatesApi.getAllTemplates();
+      setPrompts(data);
+    } catch (error) {
+      console.error('Failed to load prompts:', error);
     }
   };
 
@@ -135,9 +187,174 @@ function App() {
     setCourseData(newData);
   };
 
+  const handleSpreadDataChange = (newData) => {
+    setSpreadData(newData);
+  };
+
+  const handlePromptDataChange = (newData) => {
+    setPromptData(newData);
+  };
+
+  const handleDeckDataChange = (newData) => {
+    setDeckData(newData);
+  };
+
+  const handleSaveSpread = async () => {
+    if (!spreadData) return;
+    
+    setSaving(true);
+    try {
+      if (selectedSpread === 'new') {
+        await spreadsApi.createSpread(spreadData);
+        await loadSpreads();
+        setSelectedSpread(spreadData.key);
+      } else {
+        await spreadsApi.updateSpread(spreadData.key, spreadData);
+      }
+      notifications.show({
+        title: 'Успешно',
+        message: 'Расклад сохранен!',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось сохранить расклад',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSpread = async () => {
+    if (!spreadData || !confirm('Удалить этот расклад?')) return;
+    
+    try {
+      await spreadsApi.deleteSpread(spreadData.key);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Расклад удален!',
+        color: 'green',
+      });
+      setSelectedSpread(null);
+      setSpreadData(null);
+      await loadSpreads();
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось удалить расклад',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleSavePrompt = async () => {
+    if (!promptData) return;
+    
+    setSaving(true);
+    try {
+      if (selectedPrompt === 'new') {
+        await promptTemplatesApi.createTemplate(promptData);
+        await loadPrompts();
+        setSelectedPrompt(promptData.key);
+      } else {
+        await promptTemplatesApi.updateTemplate(promptData.key, promptData);
+      }
+      notifications.show({
+        title: 'Успешно',
+        message: 'Шаблон сохранен!',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось сохранить шаблон',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeletePrompt = async () => {
+    if (!promptData || !confirm('Удалить этот шаблон?')) return;
+    
+    try {
+      await promptTemplatesApi.deleteTemplate(promptData.key);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Шаблон удален!',
+        color: 'green',
+      });
+      setSelectedPrompt(null);
+      setPromptData(null);
+      await loadPrompts();
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось удалить шаблон',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleSaveDeck = async () => {
+    if (!deckData) return;
+    
+    setSaving(true);
+    try {
+      if (selectedDeck === 'new') {
+        await decksApi.createDeck(deckData);
+        await loadDecks();
+        setSelectedDeck(deckData.key);
+      } else {
+        await decksApi.updateDeck(deckData.key, deckData);
+      }
+      notifications.show({
+        title: 'Успешно',
+        message: 'Колода сохранена!',
+        color: 'green',
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось сохранить колоду',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteDeck = async () => {
+    if (!deckData || !confirm('Удалить эту колоду?')) return;
+    
+    try {
+      await decksApi.deleteDeck(deckData.key);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Колода удалена!',
+        color: 'green',
+      });
+      setSelectedDeck(null);
+      setDeckData(null);
+      await loadDecks();
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось удалить колоду',
+        color: 'red',
+      });
+    }
+  };
+
   const handleLogin = () => {
     setIsAuthenticated(true);
-    loadCourses(); // Загружаем курсы сразу после логина
+    loadCourses();
+    loadDecks();
+    loadSpreads();
+    loadPrompts();
   };
 
   if (!isAuthenticated) {
@@ -170,7 +387,8 @@ function App() {
                 <Title order={4} c="#FFFFFF" fw={600}>
                   Seluna Editor
                 </Title>
-                {courseData && (
+                {/* Breadcrumbs для курсов */}
+                {courseData && activeSection === 'courses' && (
                   <>
                     <Box style={{ width: 1, height: 20, backgroundColor: '#27272A' }} />
                     <Breadcrumbs
@@ -188,9 +406,70 @@ function App() {
                     </Breadcrumbs>
                   </>
                 )}
+                
+                {/* Breadcrumbs для колод */}
+                {deckData && activeSection === 'decks' && (
+                  <>
+                    <Box style={{ width: 1, height: 20, backgroundColor: '#27272A' }} />
+                    <Breadcrumbs
+                      separator={<IconChevronRight size={12} color="#71717A" />}
+                      styles={{
+                        separator: { marginLeft: 6, marginRight: 6 },
+                      }}
+                    >
+                      <Anchor size="sm" c="#71717A" style={{ textDecoration: 'none' }}>
+                        Колоды
+                      </Anchor>
+                      <Text size="sm" c="#A1A1AA" fw={500}>
+                        {deckData.translations?.ru?.name || deckData.key || 'Новая колода'}
+                      </Text>
+                    </Breadcrumbs>
+                  </>
+                )}
+                
+                {/* Breadcrumbs для раскладов */}
+                {spreadData && activeSection === 'spreads' && (
+                  <>
+                    <Box style={{ width: 1, height: 20, backgroundColor: '#27272A' }} />
+                    <Breadcrumbs
+                      separator={<IconChevronRight size={12} color="#71717A" />}
+                      styles={{
+                        separator: { marginLeft: 6, marginRight: 6 },
+                      }}
+                    >
+                      <Anchor size="sm" c="#71717A" style={{ textDecoration: 'none' }}>
+                        Расклады
+                      </Anchor>
+                      <Text size="sm" c="#A1A1AA" fw={500}>
+                        {spreadData.translations?.ru?.name || spreadData.key || 'Новый расклад'}
+                      </Text>
+                    </Breadcrumbs>
+                  </>
+                )}
+                
+                {/* Breadcrumbs для промпт-шаблонов */}
+                {promptData && activeSection === 'prompts' && (
+                  <>
+                    <Box style={{ width: 1, height: 20, backgroundColor: '#27272A' }} />
+                    <Breadcrumbs
+                      separator={<IconChevronRight size={12} color="#71717A" />}
+                      styles={{
+                        separator: { marginLeft: 6, marginRight: 6 },
+                      }}
+                    >
+                      <Anchor size="sm" c="#71717A" style={{ textDecoration: 'none' }}>
+                        Промпт-шаблоны
+                      </Anchor>
+                      <Text size="sm" c="#A1A1AA" fw={500}>
+                        {promptData.key || 'Новый шаблон'}
+                      </Text>
+                    </Breadcrumbs>
+                  </>
+                )}
               </Group>
               <Group gap="xs">
-                {courseData && (
+                {/* Course buttons */}
+                {courseData && activeSection === 'courses' && (
                   <>
                     <Button
                       leftSection={<IconDeviceFloppy size={16} />}
@@ -239,6 +518,111 @@ function App() {
                     </Button>
                   </>
                 )}
+                
+                {/* Deck buttons */}
+                {deckData && activeSection === 'decks' && (
+                  <>
+                    <Button
+                      leftSection={<IconDeviceFloppy size={16} />}
+                      onClick={handleSaveDeck}
+                      loading={saving}
+                      color="emerald"
+                      size="sm"
+                    >
+                      Сохранить
+                    </Button>
+                    {selectedDeck !== 'new' && (
+                      <Button
+                        leftSection={<IconTrash size={16} />}
+                        onClick={handleDeleteDeck}
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        styles={{
+                          root: {
+                            color: '#EF4444',
+                            '&:hover': {
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#EF4444',
+                            },
+                          },
+                        }}
+                      >
+                        Удалить
+                      </Button>
+                    )}
+                  </>
+                )}
+                
+                {/* Spread buttons */}
+                {spreadData && activeSection === 'spreads' && (
+                  <>
+                    <Button
+                      leftSection={<IconDeviceFloppy size={16} />}
+                      onClick={handleSaveSpread}
+                      loading={saving}
+                      color="emerald"
+                      size="sm"
+                    >
+                      Сохранить
+                    </Button>
+                    {selectedSpread !== 'new' && (
+                      <Button
+                        leftSection={<IconTrash size={16} />}
+                        onClick={handleDeleteSpread}
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        styles={{
+                          root: {
+                            color: '#EF4444',
+                            '&:hover': {
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#EF4444',
+                            },
+                          },
+                        }}
+                      >
+                        Удалить
+                      </Button>
+                    )}
+                  </>
+                )}
+                
+                {/* Prompt buttons */}
+                {promptData && activeSection === 'prompts' && (
+                  <>
+                    <Button
+                      leftSection={<IconDeviceFloppy size={16} />}
+                      onClick={handleSavePrompt}
+                      loading={saving}
+                      color="emerald"
+                      size="sm"
+                    >
+                      Сохранить
+                    </Button>
+                    {selectedPrompt !== 'new' && (
+                      <Button
+                        leftSection={<IconTrash size={16} />}
+                        onClick={handleDeletePrompt}
+                        variant="subtle"
+                        color="gray"
+                        size="sm"
+                        styles={{
+                          root: {
+                            color: '#EF4444',
+                            '&:hover': {
+                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              color: '#EF4444',
+                            },
+                          },
+                        }}
+                      >
+                        Удалить
+                      </Button>
+                    )}
+                  </>
+                )}
                 <Button
                   variant="subtle"
                   color="gray"
@@ -263,36 +647,85 @@ function App() {
         </AppShell.Header>
 
         <AppShell.Navbar p={0}>
-          <CourseList
+          <Sidebar
+            activeSection={activeSection}
+            onSectionChange={(value) => {
+              setActiveSection(value);
+              setSelectedCourse(null);
+              setCourseData(null);
+              setSelectedDeck(null);
+              setDeckData(null);
+              setSelectedSpread(null);
+              setSelectedPrompt(null);
+            }}
+            // Courses
             courses={courses}
             selectedCourse={selectedCourse}
             onSelectCourse={loadCourse}
             onCreateCourse={() => setCreateModalOpened(true)}
+            // Decks
+            decks={decks}
+            selectedDeck={selectedDeck}
+            onSelectDeck={(key) => setSelectedDeck(key)}
+            onCreateDeck={() => setSelectedDeck('new')}
+            // Spreads
+            spreads={spreads}
+            selectedSpread={selectedSpread}
+            onSelectSpread={(key) => setSelectedSpread(key)}
+            onCreateSpread={() => setSelectedSpread('new')}
+            // Prompts
+            prompts={prompts}
+            selectedPrompt={selectedPrompt}
+            onSelectPrompt={(key) => setSelectedPrompt(key)}
+            onCreatePrompt={() => setSelectedPrompt('new')}
           />
         </AppShell.Navbar>
 
         <AppShell.Main>
-          {courseData ? (
-            <CourseEditor
-              course={courseData}
-              onCourseChange={handleCourseDataChange}
-              previewOpened={previewOpened}
-              onPreviewClose={() => setPreviewOpened(false)}
+          {activeSection === 'courses' && (
+            courseData ? (
+              <CourseEditor
+                course={courseData}
+                onCourseChange={handleCourseDataChange}
+                previewOpened={previewOpened}
+                onPreviewClose={() => setPreviewOpened(false)}
+              />
+            ) : (
+              <Box
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  height: 'calc(100vh - 60px)',
+                  width: '100%',
+                }}
+              >
+                <Title order={4} c="dimmed" ta="center">
+                  Select a course to edit or create a new one
+                </Title>
+              </Box>
+            )
+          )}
+          {activeSection === 'decks' && (
+            <DecksEditor 
+              selectedDeck={selectedDeck}
+              deckData={deckData}
+              onDeckChange={handleDeckDataChange}
             />
-          ) : (
-            <Box
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                height: 'calc(100vh - 60px)',
-                width: '100%',
-              }}
-            >
-              <Title order={4} c="dimmed" ta="center">
-                Select a course to edit or create a new one
-              </Title>
-            </Box>
+          )}
+          {activeSection === 'spreads' && (
+            <SpreadsEditor 
+              selectedSpread={selectedSpread}
+              spreadData={spreadData}
+              onSpreadChange={handleSpreadDataChange}
+            />
+          )}
+          {activeSection === 'prompts' && (
+            <PromptTemplatesEditor 
+              selectedPrompt={selectedPrompt}
+              promptData={promptData}
+              onPromptChange={handlePromptDataChange}
+            />
           )}
         </AppShell.Main>
       </AppShell>

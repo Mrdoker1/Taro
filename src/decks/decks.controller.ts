@@ -1,6 +1,10 @@
 import {
   Controller,
   Get,
+  Post,
+  Put,
+  Delete,
+  Body,
   Req,
   Res,
   HttpStatus,
@@ -309,6 +313,101 @@ export class DecksController {
 
       // Обрабатываем другие ошибки
       return this.handleError(error, res);
+    }
+  }
+
+  @Get(':deckId/raw')
+  @ApiOperation({ summary: 'Получить raw данные колоды для редактирования' })
+  @ApiParam({
+    name: 'deckId',
+    required: true,
+    description: 'Идентификатор колоды',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Raw данные колоды успешно получены',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Колода не найдена',
+  })
+  async getDeckRaw(@Param('deckId') deckId: string) {
+    try {
+      return await this.decksService.getDeckRaw(deckId);
+    } catch (error) {
+      this.logger.error(`Ошибка при получении raw данных колоды: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Создать новую колоду' })
+  @ApiResponse({
+    status: 201,
+    description: 'Колода успешно создана',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Некорректные данные',
+  })
+  async createDeck(@Body() deckData: any) {
+    try {
+      return await this.decksService.createDeck(deckData);
+    } catch (error) {
+      this.logger.error(`Ошибка при создании колоды: ${error.message}`);
+      throw new BadRequestException('Не удалось создать колоду');
+    }
+  }
+
+  @Put(':deckId')
+  @ApiOperation({ summary: 'Обновить колоду' })
+  @ApiParam({
+    name: 'deckId',
+    required: true,
+    description: 'Идентификатор колоды',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Колода успешно обновлена',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Колода не найдена',
+  })
+  async updateDeck(@Param('deckId') deckId: string, @Body() deckData: any) {
+    try {
+      return await this.decksService.updateDeck(deckId, deckData);
+    } catch (error) {
+      this.logger.error(`Ошибка при обновлении колоды: ${error.message}`);
+      throw error;
+    }
+  }
+
+  @Delete(':deckId')
+  @ApiOperation({ summary: 'Удалить колоду' })
+  @ApiParam({
+    name: 'deckId',
+    required: true,
+    description: 'Идентификатор колоды',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Колода успешно удалена',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Колода не найдена',
+  })
+  async deleteDeck(@Param('deckId') deckId: string) {
+    try {
+      await this.decksService.deleteDeck(deckId);
+      return { message: 'Колода успешно удалена' };
+    } catch (error) {
+      this.logger.error(`Ошибка при удалении колоды: ${error.message}`);
+      throw error;
     }
   }
 }

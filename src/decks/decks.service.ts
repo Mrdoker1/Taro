@@ -271,4 +271,76 @@ export class DecksService {
       };
     });
   }
+
+  /**
+   * Получить raw данные колоды для редактирования
+   */
+  async getDeckRaw(deckId: string): Promise<DeckDocument> {
+    try {
+      const deck = await this.deckModel.findOne({ key: deckId }).exec();
+
+      if (!deck) {
+        throw new NotFoundException(`Колода ${deckId} не найдена`);
+      }
+
+      return deck;
+    } catch (error) {
+      this.logger.error(`Ошибка при получении raw данных колоды ${deckId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Создать новую колоду
+   */
+  async createDeck(deckData: any): Promise<DeckDocument> {
+    try {
+      const deck = new this.deckModel(deckData);
+      await deck.save();
+      this.logger.log(`Колода ${deckData.key} успешно создана`);
+      return deck;
+    } catch (error) {
+      this.logger.error(`Ошибка при создании колоды: ${error.message}`);
+      throw new BadRequestException('Не удалось создать колоду');
+    }
+  }
+
+  /**
+   * Обновить колоду
+   */
+  async updateDeck(deckId: string, deckData: any): Promise<DeckDocument> {
+    try {
+      const deck = await this.deckModel
+        .findOneAndUpdate({ key: deckId }, deckData, { new: true })
+        .exec();
+
+      if (!deck) {
+        throw new NotFoundException(`Колода ${deckId} не найдена`);
+      }
+
+      this.logger.log(`Колода ${deckId} успешно обновлена`);
+      return deck;
+    } catch (error) {
+      this.logger.error(`Ошибка при обновлении колоды ${deckId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Удалить колоду
+   */
+  async deleteDeck(deckId: string): Promise<void> {
+    try {
+      const result = await this.deckModel.deleteOne({ key: deckId }).exec();
+
+      if (result.deletedCount === 0) {
+        throw new NotFoundException(`Колода ${deckId} не найдена`);
+      }
+
+      this.logger.log(`Колода ${deckId} успешно удалена`);
+    } catch (error) {
+      this.logger.error(`Ошибка при удалении колоды ${deckId}: ${error.message}`);
+      throw error;
+    }
+  }
 }

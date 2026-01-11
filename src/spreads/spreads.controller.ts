@@ -1,6 +1,10 @@
 import {
   Controller,
   Get,
+  Post,
+  Put,
+  Delete,
+  Body,
   Req,
   Res,
   HttpStatus,
@@ -69,6 +73,30 @@ export class SpreadsController {
       return res.status(HttpStatus.OK).json(spreads);
     } catch (error) {
       // Обрабатываем ошибки
+      return this.handleError(error, res);
+    }
+  }
+
+  @Get(':spreadId/raw')
+  @ApiOperation({ summary: 'Получить raw данные расклада для редактирования' })
+  @ApiParam({
+    name: 'spreadId',
+    required: true,
+    description: 'Идентификатор расклада',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Raw данные расклада',
+  })
+  async getSpreadRaw(
+    @Param('spreadId') spreadId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const spread = await this.spreadsService.getSpreadRaw(spreadId);
+      return res.status(HttpStatus.OK).json(spread);
+    } catch (error) {
       return this.handleError(error, res);
     }
   }
@@ -159,6 +187,70 @@ export class SpreadsController {
     const includeAll = includeAllParam === 'true' || includeAllParam === '1';
 
     return { lang, includeAll };
+  }
+
+  @Post()
+  @ApiOperation({ summary: 'Создать новый расклад' })
+  @ApiResponse({
+    status: 201,
+    description: 'Расклад успешно создан',
+  })
+  async createSpread(@Body() spreadData: any, @Res() res: Response) {
+    try {
+      const spread = await this.spreadsService.createSpread(spreadData);
+      return res.status(HttpStatus.CREATED).json(spread);
+    } catch (error) {
+      return this.handleError(error, res);
+    }
+  }
+
+  @Put(':spreadId')
+  @ApiOperation({ summary: 'Обновить расклад' })
+  @ApiParam({
+    name: 'spreadId',
+    required: true,
+    description: 'Идентификатор расклада',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Расклад успешно обновлен',
+  })
+  async updateSpread(
+    @Param('spreadId') spreadId: string,
+    @Body() spreadData: any,
+    @Res() res: Response,
+  ) {
+    try {
+      const spread = await this.spreadsService.updateSpread(spreadId, spreadData);
+      return res.status(HttpStatus.OK).json(spread);
+    } catch (error) {
+      return this.handleError(error, res);
+    }
+  }
+
+  @Delete(':spreadId')
+  @ApiOperation({ summary: 'Удалить расклад' })
+  @ApiParam({
+    name: 'spreadId',
+    required: true,
+    description: 'Идентификатор расклада',
+    type: String,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Расклад успешно удален',
+  })
+  async deleteSpread(
+    @Param('spreadId') spreadId: string,
+    @Res() res: Response,
+  ) {
+    try {
+      await this.spreadsService.deleteSpread(spreadId);
+      return res.status(HttpStatus.OK).json({ success: true });
+    } catch (error) {
+      return this.handleError(error, res);
+    }
   }
 
   /**

@@ -46,7 +46,7 @@ export function Login({ onLogin }) {
     >
       <Container size={420}>
         <Title ta="center" mb="xl" c="#10B981" fw={700}>
-          Seluna Course Editor
+          Seluna Editor
         </Title>
 
         <Paper

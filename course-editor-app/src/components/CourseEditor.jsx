@@ -33,6 +33,7 @@ import {
 } from '@dnd-kit/sortable';
 import { ChapterEditor } from './ChapterEditor';
 import { Preview } from './Preview';
+import { ImagePreviewInput } from './ImagePreviewInput';
 
 export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewClose }) {
   const [courseData, setCourseData] = useState(course);
@@ -252,7 +253,7 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
             </Group>
 
             <Group grow mb="lg" align="flex-start">
-              <TextInput
+              <ImagePreviewInput
                 label="Cover Image URL"
                 value={courseData.coverImageUrl || ''}
                 onChange={(e) => handleBasicChange('coverImageUrl', e.target.value)}
@@ -272,8 +273,6 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
                 <Switch
                   checked={courseData.isPublished}
                   onChange={(e) => handleBasicChange('isPublished', e.currentTarget.checked)}
-                  color="emerald"
-                  size="lg"
                   label={courseData.isPublished ? 'Yes' : 'No'}
                   styles={{
                     label: {

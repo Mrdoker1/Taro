@@ -28,6 +28,12 @@ export class SpreadSummaryDto {
     required: false,
   })
   imageURL?: string;
+
+  @ApiProperty({
+    description: 'Ключ промпт-шаблона для этого расклада',
+    required: false,
+  })
+  promptTemplateKey?: string;
 }
 
 // Детальная информация о раскладе (полная)

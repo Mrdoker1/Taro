@@ -140,10 +140,12 @@ export class SpreadsService {
 
       // Преобразуем meta объекты
       const metaObj: Record<string, { label: string }> = {};
-      for (const [key, meta] of Object.entries(spread.meta)) {
-        metaObj[key] = {
-          label: meta.label[lang] || meta.label[this.defaultLanguage],
-        };
+      if (spread.meta && typeof spread.meta === 'object') {
+        for (const [key, meta] of Object.entries(spread.meta)) {
+          metaObj[key] = {
+            label: meta.label[lang] || meta.label[this.defaultLanguage],
+          };
+        }
       }
 
       return {
@@ -153,10 +155,12 @@ export class SpreadsService {
         available: spread.available,
         paid: spread.paid,
         imageURL: spread.imageURL,
-        questions:
-          spread.questions[lang] || spread.questions[this.defaultLanguage],
+        promptTemplateKey: spread.promptTemplateKey,
+        questions: spread.questions 
+          ? (spread.questions[lang] || spread.questions[this.defaultLanguage] || [])
+          : [],
         cardsCount: spread.cardsCount,
-        grid: spread.grid,
+        grid: spread.grid || [],
         meta: metaObj,
       };
     });
@@ -179,8 +183,88 @@ export class SpreadsService {
         available: spread.available,
         paid: spread.paid,
         imageURL: spread.imageURL,
+        promptTemplateKey: spread.promptTemplateKey,
+        cardsCount: spread.cardsCount,
       };
     });
+  }
+
+  /**
+   * Получить raw данные расклада для редактирования
+   */
+  async getSpreadRaw(spreadId: string): Promise<Spread> {
+    try {
+      const spread = await this.spreadModel.findOne({ key: spreadId }).exec();
+      
+      if (!spread) {
+        throw new NotFoundException('Spread not found');
+      }
+
+      return spread.toObject();
+    } catch (error) {
+      this.logger.error(`Ошибка при получении raw расклада ${spreadId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Создать новый расклад
+   */
+  async createSpread(spreadData: Partial<Spread>): Promise<Spread> {
+    try {
+      const spread = new this.spreadModel(spreadData);
+      const saved = await spread.save();
+      this.logger.log(`Создан расклад: ${saved.key}`);
+      return saved;
+    } catch (error) {
+      this.logger.error(`Ошибка при создании расклада: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Обновить расклад
+   */
+  async updateSpread(spreadId: string, spreadData: Partial<Spread>): Promise<Spread> {
+    try {
+      const spread = await this.spreadModel
+        .findOneAndUpdate(
+          { key: spreadId },
+          { $set: spreadData },
+          { new: true }
+        )
+        .exec();
+
+      if (!spread) {
+        throw new NotFoundException('Spread not found');
+      }
+
+      this.logger.log(`Обновлен расклад: ${spreadId}`);
+      return spread;
+    } catch (error) {
+      this.logger.error(`Ошибка при обновлении расклада ${spreadId}: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Удалить расклад
+   */
+  async deleteSpread(spreadId: string): Promise<void> {
+    try {
+      const result = await this.spreadModel
+        .deleteOne({ key: spreadId })
+        .exec();
+
+      if (result.deletedCount === 0) {
+        throw new NotFoundException('Spread not found');
+      }
+
+      this.logger.log(`Удален расклад: ${spreadId}`);
+    } catch (error) {
+      this.logger.error(`Ошибка при удалении расклада ${spreadId}: ${error.message}`);
+      throw error;
+    }
   }
 
   /**
