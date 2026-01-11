@@ -6,6 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
+    "postinstall": "cd course-editor-app && npm install",
     "build": "npm run build:backend && npm run build:editor",
     "build:backend": "nest build",
     "build:editor": "cd course-editor-app && npm run build",
