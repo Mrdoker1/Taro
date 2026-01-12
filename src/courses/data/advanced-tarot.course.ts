@@ -4,7 +4,7 @@ export const advancedTarotCourse: Partial<Course> = {
   "slug": "advanced-tarot",
   "coverImageUrl": "https://i.ibb.co/xxx/advanced-tarot-cover.png",
   "level": "advanced",
-  "price": 10,
+  "price": 0,
   "isPublished": true,
   "translations": {
     "ru": {
