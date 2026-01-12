@@ -80,7 +80,7 @@ export function Sidebar({
             </Text>
           </Box>
 
-          <ScrollArea flex={1} px="md">
+          <ScrollArea h="calc(100vh - 250px)" px="md">
             <Stack gap="xs">
               {decks?.map((deck) => {
                 const isSelected = selectedDeck === (deck.key || deck.id);
@@ -145,7 +145,7 @@ export function Sidebar({
             </Text>
           </Box>
 
-          <ScrollArea flex={1} px="md">
+          <ScrollArea h="calc(100vh - 250px)" px="md">
             <Stack gap="xs">
               {courses.map((slug) => {
                 const isSelected = selectedCourse === slug;
@@ -210,7 +210,7 @@ export function Sidebar({
             </Text>
           </Box>
 
-          <ScrollArea flex={1} px="md">
+          <ScrollArea h="calc(100vh - 250px)" px="md">
             <Stack gap="xs">
               {spreads?.map((spread) => {
                 const isSelected = selectedSpread === (spread.id || spread.key);
@@ -275,7 +275,7 @@ export function Sidebar({
             </Text>
           </Box>
 
-          <ScrollArea flex={1} px="md">
+          <ScrollArea h="calc(100vh - 250px)" px="md">
             <Stack gap="xs">
               {prompts?.map((prompt) => {
                 const isSelected = selectedPrompt === prompt.key;
