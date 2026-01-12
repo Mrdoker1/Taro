@@ -1,19 +1,19 @@
 import { createTheme } from '@mantine/core';
 
 export const theme = createTheme({
-  primaryColor: 'emerald',
+  primaryColor: 'violet',
   colors: {
-    emerald: [
-      '#D1FAE5',
-      '#A7F3D0',
-      '#6EE7B7',
-      '#34D399',
-      '#10B981', // Primary accent
-      '#059669',
-      '#047857',
-      '#065F46',
-      '#064E3B',
-      '#022C22',
+    violet: [
+      '#EDE9FE',
+      '#DDD6FE',
+      '#C4B5FD',
+      '#A78BFA',
+      '#8B5CF6', // Primary accent
+      '#7C3AED',
+      '#6D28D9',
+      '#5B21B6',
+      '#4C1D95',
+      '#2E1065',
     ],
     dark: [
       '#FFFFFF', // 0 - Primary text
@@ -70,7 +70,7 @@ export const theme = createTheme({
           fontSize: '14px',
           padding: '12px 16px',
           '&:focus': {
-            borderColor: '#10B981',
+            borderColor: '#8B5CF6',
           },
           '&::placeholder': {
             color: '#71717A',
@@ -134,7 +134,7 @@ export const theme = createTheme({
     },
     Switch: {
       defaultProps: {
-        color: 'emerald',
+        color: 'violet',
         size: 'md',
       },
       styles: (theme, params) => {
@@ -142,7 +142,7 @@ export const theme = createTheme({
         return {
           track: {
             cursor: 'pointer',
-            backgroundColor: checked ? '#10B981' : '#27272A',
+            backgroundColor: checked ? '#8B5CF6' : '#27272A',
             border: 'none',
           },
           thumb: {

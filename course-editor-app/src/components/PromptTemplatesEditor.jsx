@@ -102,7 +102,7 @@ export function PromptTemplatesEditor({ selectedPrompt, promptData, onPromptChan
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Основная информация
           </Title>
 
@@ -157,7 +157,7 @@ export function PromptTemplatesEditor({ selectedPrompt, promptData, onPromptChan
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Промпты
           </Title>
 

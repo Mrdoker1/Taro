@@ -38,7 +38,7 @@ export function CourseList({ courses, selectedCourse, onSelectCourse, onCreateCo
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  backgroundColor: isSelected ? '#10B981' : 'transparent',
+                  backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                   color: isSelected ? '#FFFFFF' : '#A1A1AA',
                   fontSize: '13px',
                   fontWeight: 500,
@@ -47,11 +47,11 @@ export function CourseList({ courses, selectedCourse, onSelectCourse, onCreateCo
                   cursor: 'pointer',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                  e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                   e.currentTarget.style.color = '#FFFFFF';
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                  e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                   e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                 }}
               >
@@ -73,7 +73,7 @@ export function CourseList({ courses, selectedCourse, onSelectCourse, onCreateCo
           leftSection={<IconPlus size={16} />}
           onClick={onCreateCourse}
           variant="light"
-          color="emerald"
+          color="violet"
           styles={{
             root: {
               fontSize: '13px',

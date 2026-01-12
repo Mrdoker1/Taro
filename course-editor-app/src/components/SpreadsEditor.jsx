@@ -125,7 +125,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Основная информация
           </Title>
 
@@ -189,13 +189,13 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Схема расклада и метаданные
           </Title>
 
           <Stack gap="lg">
             <Box>
-              <Text size="sm" fw={500} mb="xs" c="#10B981">
+              <Text size="sm" fw={500} mb="xs" c="#8B5CF6">
                 Схема (Grid)
               </Text>
               <Text size="xs" c="dimmed" mb="md">
@@ -288,7 +288,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 <Button
                   leftSection={<IconPlus size={16} />}
                   variant="light"
-                  color="emerald"
+                  color="violet"
                   size="sm"
                   onClick={() => {
                     const newGrid = [...(localData.grid || []), [0]];
@@ -306,7 +306,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 paddingTop: '1rem',
               }}
             >
-              <Text size="sm" fw={500} mb="xs" c="#10B981">
+              <Text size="sm" fw={500} mb="xs" c="#8B5CF6">
                 Метаданные позиций
               </Text>
               <Text size="xs" c="dimmed" mb="md">
@@ -334,7 +334,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                             width: '32px',
                             height: '32px',
                             borderRadius: '50%',
-                            backgroundColor: '#10B981',
+                            backgroundColor: '#8B5CF6',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -344,7 +344,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                         >
                           {position}
                         </Box>
-                        <Text fw={500} c="#10B981">
+                        <Text fw={500} c="#8B5CF6">
                           Позиция {position}
                         </Text>
                       </Group>
@@ -404,7 +404,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Переводы
           </Title>
 
@@ -484,7 +484,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Готовые вопросы
           </Title>
 
@@ -538,7 +538,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 <Button
                   leftSection={<IconPlus size={16} />}
                   variant="light"
-                  color="emerald"
+                  color="violet"
                   onClick={() => {
                     const newQuestions = [...(localData.questions?.ru || []), ''];
                     handleChange({
@@ -599,7 +599,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 <Button
                   leftSection={<IconPlus size={16} />}
                   variant="light"
-                  color="emerald"
+                  color="violet"
                   onClick={() => {
                     const newQuestions = [...(localData.questions?.en || []), ''];
                     handleChange({

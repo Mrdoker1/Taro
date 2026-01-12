@@ -24,6 +24,9 @@ class ContentBlock {
 
 // Схема для страницы
 class CoursePage {
+  @Prop({ required: false })
+  _id?: string;
+
   @Prop({ required: true })
   title: string;
 
@@ -33,6 +36,9 @@ class CoursePage {
 
 // Схема для главы
 class CourseChapter {
+  @Prop({ required: false })
+  _id?: string;
+
   @Prop({ required: true })
   title: string;
 

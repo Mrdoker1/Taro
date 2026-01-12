@@ -89,4 +89,187 @@ export class MailService {
       throw new Error('Ошибка при отправке письма для сброса пароля');
     }
   }
+
+  // Массовая отправка email
+  async sendBulkEmail(
+    userEmail: string,
+    username: string,
+    subject: string,
+    markdownContent: string,
+  ) {
+    this.logger.log(`Отправляем массовый email на: ${userEmail}`);
+
+    try {
+      // Конвертируем markdown в HTML (простая реализация)
+      const htmlContent = this.markdownToHtml(markdownContent);
+
+      const { data, error } = await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'Seluna App <noreply@taroapi.uno>',
+        to: [userEmail],
+        subject: subject,
+        html: this.wrapInEmailTemplate(username, htmlContent),
+      });
+
+      if (error) {
+        this.logger.error('Ошибка Resend API:', error);
+        throw new Error(`Ошибка Resend: ${error.message}`);
+      }
+
+      this.logger.log(`Email отправлен на ${userEmail}, ID: ${data?.id}`);
+    } catch (error) {
+      this.logger.error('Ошибка отправки email:', error.message);
+      throw new Error('Ошибка при отправке письма');
+    }
+  }
+
+  // Конвертация markdown в HTML
+  private markdownToHtml(markdown: string): string {
+    let html = markdown;
+    
+    // Сохраняем элементы которые не нужно экранировать
+    const htmlElements: string[] = [];
+    
+    // Горизонтальная линия (---, ***, ___) - ДО экранирования
+    html = html.replace(/^([-*_])\1{2,}\s*$/gm, () => {
+      const index = htmlElements.length;
+      htmlElements.push('<hr>');
+      return `§§§HTMLELEM§${index}§§§`;
+    });
+    
+    // Блоки кода (```) - ДО экранирования, чтобы сохранить их
+    html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
+      const index = htmlElements.length;
+      htmlElements.push(`<pre><code>${code}</code></pre>`);
+      return `§§§HTMLELEM§${index}§§§`;
+    });
+    
+    // Инлайн код (`) - сохраняем
+    html = html.replace(/`([^`]+)`/g, (match, code) => {
+      const index = htmlElements.length;
+      htmlElements.push(`<code>${code}</code>`);
+      return `§§§HTMLELEM§${index}§§§`;
+    });
+    
+    // Экранирование HTML
+    html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    
+    // Заголовки (альтернативный синтаксис с подчеркиванием)
+    html = html.replace(/^(.+)\n={3,}\s*$/gm, '<h1>$1</h1>');
+    html = html.replace(/^(.+)\n-{3,}\s*$/gm, '<h2>$1</h2>');
+    
+    // Заголовки (стандартный синтаксис с #)
+    html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+    html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+    html = html.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+    html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+    html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+    html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+    
+    // Цитаты (>)
+    html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+    
+    // Жирный и курсив
+    html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    html = html.replace(/_(.+?)_/g, '<em>$1</em>');
+    
+    // Зачеркнутый (~~)
+    html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
+    
+    // Ссылки [text](url)
+    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
+    
+    // Изображения ![alt](url)
+    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
+    
+    // Нумерованные списки
+    html = html.replace(/^\d+\.\s+(.+)$/gm, '<oli>$1</oli>');
+    html = html.replace(/(<oli>.*<\/oli>\n?)+/g, '<ol>$&</ol>');
+    html = html.replace(/<\/?oli>/g, (match) => match === '<oli>' ? '<li>' : '</li>');
+    
+    // Маркированные списки
+    html = html.replace(/^[\*\-\+]\s+(.+)$/gm, '<uli>$1</uli>');
+    html = html.replace(/(<uli>.*<\/uli>\n?)+/g, '<ul>$&</ul>');
+    html = html.replace(/<\/?uli>/g, (match) => match === '<uli>' ? '<li>' : '</li>');
+    
+    // Чекбоксы
+    html = html.replace(/\[ \]/g, '☐');
+    html = html.replace(/\[x\]/gi, '☑');
+    
+    // Параграфы и переносы строк
+    html = html.replace(/\n\n+/g, '</p><p>');
+    html = html.replace(/\n/g, '<br>');
+    
+    // Восстанавливаем все HTML элементы
+    html = html.replace(/§§§HTMLELEM§(\d+)§§§/g, (match, index) => {
+      return htmlElements[parseInt(index)];
+    });
+    
+    return html;
+  }
+
+  // Обёртка HTML контента в email шаблон
+  private wrapInEmailTemplate(username: string, content: string): string {
+    return `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; line-height: 1.5; color: #1f2937; background-color: #f9fafb; margin: 0; padding: 20px; }
+        .email-wrapper { max-width: 600px; margin: 0 auto; }
+        .container { background: #ffffff; border-radius: 8px; border: 1px solid #e5e7eb; overflow: hidden; }
+        .header { padding: 32px 24px 0; text-align: center; }
+        .app-name { font-size: 18px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+        .content { padding: 24px; }
+        .greeting { font-size: 16px; margin-bottom: 16px; color: #374151; }
+        .message { font-size: 14px; line-height: 1.6; color: #4b5563; }
+        .message h1 { font-size: 24px; font-weight: 700; color: #111827; margin: 20px 0 12px 0; }
+        .message h2 { font-size: 20px; font-weight: 600; color: #1f2937; margin: 18px 0 10px 0; }
+        .message h3 { font-size: 18px; font-weight: 600; color: #374151; margin: 16px 0 8px 0; }
+        .message h4 { font-size: 16px; font-weight: 600; color: #4b5563; margin: 14px 0 8px 0; }
+        .message h5 { font-size: 14px; font-weight: 600; color: #6b7280; margin: 12px 0 6px 0; }
+        .message h6 { font-size: 12px; font-weight: 600; color: #9ca3af; margin: 10px 0 6px 0; }
+        .message p { margin: 12px 0; }
+        .message strong { font-weight: 600; color: #111827; }
+        .message em { font-style: italic; }
+        .message del { text-decoration: line-through; color: #9ca3af; }
+        .message a { color: #8b5cf6; text-decoration: underline; }
+        .message a:hover { color: #7c3aed; }
+        .message code { background-color: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: 'Courier New', monospace; font-size: 13px; color: #dc2626; }
+        .message pre { background-color: #1f2937; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 16px 0; }
+        .message pre code { background-color: transparent; padding: 0; color: #10b981; font-size: 13px; }
+        .message blockquote { border-left: 4px solid #8b5cf6; padding-left: 16px; margin: 16px 0; color: #6b7280; font-style: italic; }
+        .message hr { border: none; border-top: 2px solid #e5e7eb; margin: 20px 0; }
+        .message ul { margin: 12px 0; padding-left: 24px; list-style-type: disc; }
+        .message ol { margin: 12px 0; padding-left: 24px; list-style-type: decimal; }
+        .message li { margin: 6px 0; }
+        .message img { max-width: 100%; height: auto; border-radius: 6px; margin: 12px 0; }
+        .footer { background-color: #f9fafb; padding: 24px; text-align: center; border-top: 1px solid #e5e7eb; }
+        .footer-text { font-size: 12px; color: #6b7280; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="email-wrapper">
+        <div class="container">
+            <div class="header">
+                <div class="app-name">Seluna App</div>
+            </div>
+            <div class="content">
+                <p class="greeting">Hello, <strong>${username}</strong></p>
+                <div class="message"><p>${content}</p></div>
+            </div>
+            <div class="footer">
+                <p class="footer-text">Seluna App Team</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+  }
 }

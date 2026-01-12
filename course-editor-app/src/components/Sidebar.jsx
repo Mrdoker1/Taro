@@ -1,5 +1,5 @@
-import { Stack, Button, Text, Box, ScrollArea, UnstyledButton, Select } from '@mantine/core';
-import { IconPlus, IconBook, IconCards, IconSparkles } from '@tabler/icons-react';
+import { Stack, Button, Text, Box, ScrollArea, UnstyledButton, Select, Group } from '@mantine/core';
+import { IconPlus, IconBook, IconCards, IconSparkles, IconUsers, IconMail } from '@tabler/icons-react';
 
 export function Sidebar({ 
   activeSection, 
@@ -24,12 +24,21 @@ export function Sidebar({
   selectedPrompt,
   onSelectPrompt,
   onCreatePrompt,
+  // Users
+  users,
+  selectedUser,
+  onSelectUser,
+  onCreateUser,
+  usersAppFilter,
+  onUsersAppFilterChange,
+  onOpenBulkEmail,
 }) {
   const sections = [
     { value: 'courses', label: 'Курсы', icon: IconBook },
     { value: 'decks', label: 'Колоды', icon: IconCards },
     { value: 'spreads', label: 'Расклады', icon: IconCards },
     { value: 'prompts', label: 'Промпт-шаблоны', icon: IconSparkles },
+    { value: 'users', label: 'Пользователи', icon: IconUsers },
   ];
 
   return (
@@ -55,7 +64,7 @@ export function Sidebar({
               color: '#FFFFFF',
               fontWeight: 600,
               '&:focus': {
-                borderColor: '#10B981',
+                borderColor: '#8B5CF6',
               },
             },
           }}
@@ -83,7 +92,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -92,11 +101,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -118,7 +127,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateDeck}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новая колода
@@ -148,7 +157,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -157,11 +166,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -183,7 +192,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateCourse}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               New Course
@@ -213,7 +222,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -222,11 +231,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -248,7 +257,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateSpread}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый расклад
@@ -278,7 +287,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -287,11 +296,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -313,11 +322,143 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreatePrompt}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый шаблон
             </Button>
+          </Box>
+        </>
+      )}
+
+      {/* Users Section */}
+      {activeSection === 'users' && (
+        <>
+          <Box p="md" style={{ borderBottom: '1px solid #27272A' }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A">
+                ПОЛЬЗОВАТЕЛИ
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({(users || []).length})
+              </Text>
+            </Group>
+            <Group gap={4}>
+              <Button
+                size="xs"
+                variant={usersAppFilter === 'taro' ? 'filled' : 'subtle'}
+                color={usersAppFilter === 'taro' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('taro')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
+                  },
+                }}
+              >
+                Taro
+              </Button>
+              <Button
+                size="xs"
+                variant={usersAppFilter === 'doc-scan' ? 'filled' : 'subtle'}
+                color={usersAppFilter === 'doc-scan' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('doc-scan')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
+                  },
+                }}
+              >
+                Doc Scan
+              </Button>
+              <Button
+                size="xs"
+                variant={usersAppFilter === '' ? 'filled' : 'subtle'}
+                color={usersAppFilter === '' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
+                  },
+                }}
+              >
+                Все
+              </Button>
+            </Group>
+          </Box>
+
+          <ScrollArea style={{ flex: 1 }}>
+            <Stack gap={0} p="sm">
+              {(users || []).map((user) => {
+                const isSelected = selectedUser === user._id;
+                return (
+                  <UnstyledButton
+                    key={user._id}
+                    onClick={() => onSelectUser(user._id)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
+                      color: isSelected ? '#FFFFFF' : '#A1A1AA',
+                      transition: 'all 0.2s',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
+                      e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
+                    }}
+                  >
+                    <Text size="sm" fw={500} truncate>
+                      {user.email}
+                    </Text>
+                    <Text size="xs" c={isSelected ? 'rgba(255, 255, 255, 0.7)' : 'dimmed'}>
+                      {user.appType} • {user.role}
+                    </Text>
+                  </UnstyledButton>
+                );
+              })}
+              {(!users || users.length === 0) && (
+                <Text c="#71717A" size="sm" ta="center" mt="xl">
+                  Нет пользователей
+                </Text>
+              )}
+            </Stack>
+          </ScrollArea>
+
+          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+            <Stack gap="xs">
+              <Button
+                fullWidth
+                leftSection={<IconMail size={16} />}
+                onClick={onOpenBulkEmail}
+                variant="light"
+                color="blue"
+                styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
+              >
+                Email рассылка
+              </Button>
+              <Button
+                fullWidth
+                leftSection={<IconPlus size={16} />}
+                onClick={onCreateUser}
+                variant="light"
+                color="violet"
+                styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
+              >
+                Новый пользователь
+              </Button>
+            </Stack>
           </Box>
         </>
       )}

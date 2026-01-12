@@ -515,4 +515,142 @@ export class AuthService implements OnModuleInit {
 
     return appNames[appType] || appType;
   }
+
+  // Методы для управления пользователями (для админ-панели)
+  
+  /**
+   * Получение всех пользователей (только для админов)
+   */
+  async getAllUsers(appType?: string) {
+    this.logger.log(`Получение списка всех пользователей${appType ? ` для appType: ${appType}` : ''}`);
+    
+    const filter = appType ? { appType } : {};
+    const users = await this.userModel
+      .find(filter)
+      .select('-password -resetPasswordToken -resetPasswordExpires')
+      .sort({ createdAt: -1 });
+    
+    this.logger.log(`Найдено пользователей: ${users.length}`);
+    return users;
+  }
+
+  /**
+   * Обновление данных пользователя (для админов)
+   */
+  async updateUser(userId: string, updateData: Partial<User>) {
+    this.logger.log(`Обновление пользователя ID: ${userId}`);
+    
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    // Запрещаем обновление пароля через этот метод
+    delete updateData.password;
+    delete updateData.resetPasswordToken;
+    delete updateData.resetPasswordExpires;
+
+    // Обновляем разрешенные поля
+    Object.assign(user, updateData);
+    await user.save();
+
+    this.logger.log(`Пользователь ${user.email} успешно обновлен`);
+    return await this.userModel.findById(userId).select('-password');
+  }
+
+  /**
+   * Удаление пользователя (для админов)
+   */
+  async deleteUser(userId: string) {
+    this.logger.log(`Удаление пользователя ID: ${userId}`);
+    
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('Пользователь не найден');
+    }
+
+    await this.userModel.findByIdAndDelete(userId);
+    this.logger.log(`Пользователь ${user.email} успешно удален`);
+    
+    return { message: 'Пользователь успешно удален' };
+  }
+
+  /**
+   * Повторная отправка письма подтверждения (для админов)
+   */
+  async resendConfirmationEmail(userId: string) {
+    this.logger.log(`Отправка письма подтверждения для пользователя ID: ${userId}`);
+    
+    try {
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new NotFoundException('Пользователь не найден');
+      }
+
+      await this.mailService.sendConfirmationEmail(user.email, String(user._id));
+      this.logger.log(`Письмо подтверждения отправлено на ${user.email}`);
+      
+      return { message: 'Письмо подтверждения отправлено' };
+    } catch (error) {
+      this.logger.error(`Ошибка отправки письма подтверждения: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Отправка письма для сброса пароля по ID пользователя (для админов)
+   */
+  async sendPasswordResetByUserId(userId: string) {
+    this.logger.log(`Отправка письма сброса пароля для пользователя ID: ${userId}`);
+    
+    try {
+      const user = await this.userModel.findById(userId);
+      if (!user) {
+        throw new NotFoundException('Пользователь не найден');
+      }
+
+      // Используем существующий метод forgotPassword
+      return await this.forgotPassword(user.email, user.appType);
+    } catch (error) {
+      this.logger.error(`Ошибка отправки письма сброса пароля: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Массовая отправка email пользователям (для админов)
+   */
+  async sendBulkEmail(userIds: string[], subject: string, content: string) {
+    this.logger.log(`Массовая отправка email для ${userIds.length} пользователей`);
+    
+    try {
+      const users = await this.userModel.find({ _id: { $in: userIds } });
+      
+      if (users.length === 0) {
+        throw new NotFoundException('Пользователи не найдены');
+      }
+
+      const results = await Promise.allSettled(
+        users.map(async (user) => {
+          await this.mailService.sendBulkEmail(user.email, user.username || 'User', subject, content);
+          return { email: user.email, status: 'success' };
+        })
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      this.logger.log(`Email отправлены: успешно ${successful}, ошибок ${failed}`);
+      
+      return { 
+        message: `Email отправлены: успешно ${successful}, ошибок ${failed}`,
+        successful,
+        failed,
+        total: userIds.length
+      };
+    } catch (error) {
+      this.logger.error(`Ошибка массовой отправки email: ${error.message}`);
+      throw error;
+    }
+  }
 }

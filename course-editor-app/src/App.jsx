@@ -8,7 +8,9 @@ import { CourseEditor } from './components/CourseEditor';
 import { DecksEditor } from './components/DecksEditor';
 import { SpreadsEditor } from './components/SpreadsEditor';
 import { PromptTemplatesEditor } from './components/PromptTemplatesEditor';
-import { courseApi, decksApi, spreadsApi, promptTemplatesApi } from './api/client';
+import { UsersEditor } from './components/UsersEditor';
+import BulkEmailModal from './components/BulkEmailModal';
+import { courseApi, decksApi, spreadsApi, promptTemplatesApi, usersApi } from './api/client';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -38,6 +40,13 @@ function App() {
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [promptData, setPromptData] = useState(null);
   
+  // Users
+  const [users, setUsers] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [userData, setUserData] = useState(null);
+  const [usersAppFilter, setUsersAppFilter] = useState('taro'); // По умолчанию taro
+  const [bulkEmailOpened, setBulkEmailOpened] = useState(false);
+  
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -48,6 +57,7 @@ function App() {
       loadDecks();
       loadSpreads();
       loadPrompts();
+      loadUsers('taro'); // По умолчанию загружаем пользователей taro
     }
   }, []);
 
@@ -84,6 +94,148 @@ function App() {
       setPrompts(data);
     } catch (error) {
       console.error('Failed to load prompts:', error);
+    }
+  };
+
+  const loadUsers = async (appType = '') => {
+    try {
+      console.log('Loading users with token:', localStorage.getItem('editor-token'));
+      const data = await usersApi.getAllUsers(appType);
+      console.log('Users loaded:', data);
+      setUsers(data);
+    } catch (error) {
+      console.error('Failed to load users:', error);
+      console.error('Error details:', error.response);
+    }
+  };
+
+  const loadUser = (userId) => {
+    const user = users.find(u => u._id === userId);
+    if (user) {
+      setUserData(user);
+      setSelectedUser(userId);
+    }
+  };
+
+  const handleUsersAppFilterChange = async (newAppType) => {
+    setUsersAppFilter(newAppType);
+    setSelectedUser(null);
+    setUserData(null);
+    await loadUsers(newAppType);
+  };
+
+  const handleCreateUser = () => {
+    // Создаем "новый" пользователь для формы
+    const newUser = {
+      _id: 'new',
+      email: '',
+      username: '',
+      password: '',
+      role: 'user',
+      isActive: true,
+      appType: usersAppFilter || 'taro',
+      subscriptionExpiresAt: null,
+    };
+    setUserData(newUser);
+    setSelectedUser('new');
+  };
+
+  const handleSaveNewUser = async (userData) => {
+    try {
+      const createData = {
+        email: userData.email,
+        password: userData.password,
+        username: userData.username,
+        role: userData.role,
+        isActive: userData.isActive,
+        appType: userData.appType,
+        subscriptionExpiresAt: userData.subscriptionExpiresAt,
+      };
+      
+      await usersApi.createUser(createData);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Пользователь создан!',
+        color: 'green',
+      });
+      setSelectedUser(null);
+      setUserData(null);
+      await loadUsers(usersAppFilter);
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: error.response?.data?.message || 'Не удалось создать пользователя',
+        color: 'red',
+      });
+    }
+  };
+
+  const handleUserDataChange = (newData) => {
+    setUserData(newData);
+  };
+
+  const handleSaveUser = async () => {
+    if (!userData) return;
+    
+    // Если это новый пользователь
+    if (selectedUser === 'new') {
+      setSaving(true);
+      try {
+        await handleSaveNewUser(userData);
+      } finally {
+        setSaving(false);
+      }
+      return;
+    }
+    
+    // Обновление существующего пользователя
+    setSaving(true);
+    try {
+      const updateData = {
+        username: userData.username,
+        role: userData.role,
+        isActive: userData.isActive,
+        subscriptionExpiresAt: userData.subscriptionExpiresAt,
+      };
+      
+      await usersApi.updateUser(userData._id, updateData);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Пользователь обновлен!',
+        color: 'green',
+      });
+      await loadUsers(usersAppFilter);
+      loadUser(userData._id); // Reload user data
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось обновить пользователя',
+        color: 'red',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!userData || !confirm(`Удалить пользователя ${userData.email}?`)) return;
+    
+    try {
+      await usersApi.deleteUser(userData._id);
+      notifications.show({
+        title: 'Успешно',
+        message: 'Пользователь удален!',
+        color: 'green',
+      });
+      setSelectedUser(null);
+      setUserData(null);
+      await loadUsers();
+    } catch (error) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Не удалось удалить пользователя',
+        color: 'red',
+      });
     }
   };
 
@@ -559,7 +711,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSave}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Save Course
@@ -619,7 +771,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSaveDeck}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -663,7 +815,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSaveSpread}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -707,7 +859,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSavePrompt}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -743,6 +895,40 @@ function App() {
                     )}
                   </>
                 )}
+
+                {/* User buttons */}
+                {userData && activeSection === 'users' && (
+                  <>
+                    <Button
+                      leftSection={<IconDeviceFloppy size={16} />}
+                      onClick={handleSaveUser}
+                      loading={saving}
+                      color="violet"
+                      size="sm"
+                    >
+                      Сохранить
+                    </Button>
+                    <Button
+                      leftSection={<IconTrash size={16} />}
+                      onClick={handleDeleteUser}
+                      variant="subtle"
+                      color="gray"
+                      size="sm"
+                      styles={{
+                        root: {
+                          color: '#EF4444',
+                          '&:hover': {
+                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                            color: '#EF4444',
+                          },
+                        },
+                      }}
+                    >
+                      Удалить
+                    </Button>
+                  </>
+                )}
+                
                 <Button
                   variant="subtle"
                   color="gray"
@@ -777,6 +963,8 @@ function App() {
               setDeckData(null);
               setSelectedSpread(null);
               setSelectedPrompt(null);
+              setSelectedUser(null);
+              setUserData(null);
             }}
             // Courses
             courses={courses}
@@ -798,6 +986,14 @@ function App() {
             selectedPrompt={selectedPrompt}
             onSelectPrompt={(key) => setSelectedPrompt(key)}
             onCreatePrompt={() => setSelectedPrompt('new')}
+            // Users
+            users={users}
+            selectedUser={selectedUser}
+            onSelectUser={loadUser}
+            onCreateUser={handleCreateUser}
+            usersAppFilter={usersAppFilter}
+            onUsersAppFilterChange={handleUsersAppFilterChange}
+            onOpenBulkEmail={() => setBulkEmailOpened(true)}
           />
         </AppShell.Navbar>
 
@@ -845,6 +1041,14 @@ function App() {
               selectedPrompt={selectedPrompt}
               promptData={promptData}
               onPromptChange={handlePromptDataChange}
+            />
+          )}
+
+          {activeSection === 'users' && (
+            <UsersEditor
+              selectedUser={selectedUser}
+              userData={userData}
+              onUserChange={handleUserDataChange}
             />
           )}
         </AppShell.Main>
@@ -895,12 +1099,19 @@ function App() {
           <Button
             onClick={handleCreateCourse}
             loading={loading}
-            color="emerald"
+            color="violet"
           >
             Create Course
           </Button>
         </Group>
       </Modal>
+
+      {/* Bulk Email Modal */}
+      <BulkEmailModal
+        opened={bulkEmailOpened}
+        onClose={() => setBulkEmailOpened(false)}
+        users={users}
+      />
     </>
   );
 }
