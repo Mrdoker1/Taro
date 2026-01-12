@@ -9,6 +9,7 @@ import { DecksEditor } from './components/DecksEditor';
 import { SpreadsEditor } from './components/SpreadsEditor';
 import { PromptTemplatesEditor } from './components/PromptTemplatesEditor';
 import { UsersEditor } from './components/UsersEditor';
+import BulkEmailModal from './components/BulkEmailModal';
 import { courseApi, decksApi, spreadsApi, promptTemplatesApi, usersApi } from './api/client';
 
 function App() {
@@ -44,6 +45,7 @@ function App() {
   const [selectedUser, setSelectedUser] = useState(null);
   const [userData, setUserData] = useState(null);
   const [usersAppFilter, setUsersAppFilter] = useState('taro'); // По умолчанию taro
+  const [bulkEmailOpened, setBulkEmailOpened] = useState(false);
   
   const [loading, setLoading] = useState(false);
 
@@ -991,6 +993,7 @@ function App() {
             onCreateUser={handleCreateUser}
             usersAppFilter={usersAppFilter}
             onUsersAppFilterChange={handleUsersAppFilterChange}
+            onOpenBulkEmail={() => setBulkEmailOpened(true)}
           />
         </AppShell.Navbar>
 
@@ -1102,6 +1105,13 @@ function App() {
           </Button>
         </Group>
       </Modal>
+
+      {/* Bulk Email Modal */}
+      <BulkEmailModal
+        opened={bulkEmailOpened}
+        onClose={() => setBulkEmailOpened(false)}
+        users={users}
+      />
     </>
   );
 }

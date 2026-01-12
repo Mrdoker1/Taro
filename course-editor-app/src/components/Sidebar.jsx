@@ -1,5 +1,5 @@
 import { Stack, Button, Text, Box, ScrollArea, UnstyledButton, Select, Group } from '@mantine/core';
-import { IconPlus, IconBook, IconCards, IconSparkles, IconUsers } from '@tabler/icons-react';
+import { IconPlus, IconBook, IconCards, IconSparkles, IconUsers, IconMail } from '@tabler/icons-react';
 
 export function Sidebar({ 
   activeSection, 
@@ -31,6 +31,7 @@ export function Sidebar({
   onCreateUser,
   usersAppFilter,
   onUsersAppFilterChange,
+  onOpenBulkEmail,
 }) {
   const sections = [
     { value: 'courses', label: 'Курсы', icon: IconBook },
@@ -436,16 +437,28 @@ export function Sidebar({
           </ScrollArea>
 
           <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
-            <Button
-              fullWidth
-              leftSection={<IconPlus size={16} />}
-              onClick={onCreateUser}
-              variant="light"
-              color="violet"
-              styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
-            >
-              Новый пользователь
-            </Button>
+            <Stack gap="xs">
+              <Button
+                fullWidth
+                leftSection={<IconMail size={16} />}
+                onClick={onOpenBulkEmail}
+                variant="light"
+                color="blue"
+                styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
+              >
+                Email рассылка
+              </Button>
+              <Button
+                fullWidth
+                leftSection={<IconPlus size={16} />}
+                onClick={onCreateUser}
+                variant="light"
+                color="violet"
+                styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
+              >
+                Новый пользователь
+              </Button>
+            </Stack>
           </Box>
         </>
       )}

@@ -616,4 +616,41 @@ export class AuthService implements OnModuleInit {
       throw error;
     }
   }
+
+  /**
+   * Массовая отправка email пользователям (для админов)
+   */
+  async sendBulkEmail(userIds: string[], subject: string, content: string) {
+    this.logger.log(`Массовая отправка email для ${userIds.length} пользователей`);
+    
+    try {
+      const users = await this.userModel.find({ _id: { $in: userIds } });
+      
+      if (users.length === 0) {
+        throw new NotFoundException('Пользователи не найдены');
+      }
+
+      const results = await Promise.allSettled(
+        users.map(async (user) => {
+          await this.mailService.sendBulkEmail(user.email, user.username || 'User', subject, content);
+          return { email: user.email, status: 'success' };
+        })
+      );
+
+      const successful = results.filter(r => r.status === 'fulfilled').length;
+      const failed = results.filter(r => r.status === 'rejected').length;
+
+      this.logger.log(`Email отправлены: успешно ${successful}, ошибок ${failed}`);
+      
+      return { 
+        message: `Email отправлены: успешно ${successful}, ошибок ${failed}`,
+        successful,
+        failed,
+        total: userIds.length
+      };
+    } catch (error) {
+      this.logger.error(`Ошибка массовой отправки email: ${error.message}`);
+      throw error;
+    }
+  }
 }

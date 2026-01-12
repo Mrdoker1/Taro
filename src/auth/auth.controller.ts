@@ -211,6 +211,21 @@ export class AuthController {
     return await this.authService.register(createUserDto);
   }
 
+  @Post('users/bulk-email')
+  @ApiOperation({ summary: 'Массовая отправка email пользователям (admin)' })
+  @ApiResponse({ status: 200, description: 'Письма отправлены' })
+  async sendBulkEmail(
+    @Body() body: { userIds: string[]; subject: string; content: string },
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.sendBulkEmail(body.userIds, body.subject, body.content);
+  }
+
   @Patch('users/:id')
   @ApiOperation({ summary: 'Обновить данные пользователя (admin)' })
   @ApiResponse({ status: 200, description: 'Пользователь обновлен' })

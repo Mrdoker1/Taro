@@ -252,4 +252,14 @@ export const usersApi = {
     const response = await usersApiClient.post(`/users/${userId}/send-password-reset`);
     return response.data;
   },
+
+  // Send bulk email
+  sendBulkEmail: async (userIds, subject, content) => {
+    const response = await usersApiClient.post('/users/bulk-email', {
+      userIds,
+      subject,
+      content,
+    });
+    return response.data;
+  },
 };
