@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AppShell, Box, Title, Button, Group, TextInput, Modal, Breadcrumbs, Anchor, Text } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight } from '@tabler/icons-react';
+import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight, IconDownload } from '@tabler/icons-react';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { CourseEditor } from './components/CourseEditor';
@@ -134,6 +134,27 @@ function App() {
     setCourseData(null);
   };
 
+  const handleDownloadCourseJSON = () => {
+    if (!courseData) return;
+    
+    const dataStr = JSON.stringify(courseData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `course-${courseData.key || courseData.slug || 'backup'}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    notifications.show({
+      title: 'Успех',
+      message: 'Курс скачан в формате JSON',
+      color: 'green',
+    });
+  };
+
   const handleSave = async () => {
     if (!courseData) return;
     
@@ -227,6 +248,27 @@ function App() {
     }
   };
 
+  const handleDownloadSpreadJSON = () => {
+    if (!spreadData) return;
+    
+    const dataStr = JSON.stringify(spreadData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `spread-${spreadData.key || 'backup'}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    notifications.show({
+      title: 'Успех',
+      message: 'Расклад скачан в формате JSON',
+      color: 'green',
+    });
+  };
+
   const handleDeleteSpread = async () => {
     if (!spreadData || !confirm('Удалить этот расклад?')) return;
     
@@ -277,6 +319,27 @@ function App() {
     }
   };
 
+  const handleDownloadPromptJSON = () => {
+    if (!promptData) return;
+    
+    const dataStr = JSON.stringify(promptData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `prompt-${promptData.key || 'backup'}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    notifications.show({
+      title: 'Успех',
+      message: 'Промпт-шаблон скачан в формате JSON',
+      color: 'green',
+    });
+  };
+
   const handleDeletePrompt = async () => {
     if (!promptData || !confirm('Удалить этот шаблон?')) return;
     
@@ -325,6 +388,27 @@ function App() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleDownloadDeckJSON = () => {
+    if (!deckData) return;
+    
+    const dataStr = JSON.stringify(deckData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `deck-${deckData.key || 'backup'}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    notifications.show({
+      title: 'Успех',
+      message: 'Колода скачана в формате JSON',
+      color: 'green',
+    });
   };
 
   const handleDeleteDeck = async () => {
@@ -481,6 +565,15 @@ function App() {
                       Save Course
                     </Button>
                     <Button
+                      leftSection={<IconDownload size={16} />}
+                      onClick={handleDownloadCourseJSON}
+                      variant="light"
+                      color="blue"
+                      size="sm"
+                    >
+                      Download JSON
+                    </Button>
+                    <Button
                       leftSection={<IconTrash size={16} />}
                       onClick={handleDelete}
                       variant="subtle"
@@ -531,6 +624,15 @@ function App() {
                     >
                       Сохранить
                     </Button>
+                    <Button
+                      leftSection={<IconDownload size={16} />}
+                      onClick={handleDownloadDeckJSON}
+                      variant="light"
+                      color="blue"
+                      size="sm"
+                    >
+                      Download JSON
+                    </Button>
                     {selectedDeck !== 'new' && (
                       <Button
                         leftSection={<IconTrash size={16} />}
@@ -566,6 +668,15 @@ function App() {
                     >
                       Сохранить
                     </Button>
+                    <Button
+                      leftSection={<IconDownload size={16} />}
+                      onClick={handleDownloadSpreadJSON}
+                      variant="light"
+                      color="blue"
+                      size="sm"
+                    >
+                      Download JSON
+                    </Button>
                     {selectedSpread !== 'new' && (
                       <Button
                         leftSection={<IconTrash size={16} />}
@@ -600,6 +711,15 @@ function App() {
                       size="sm"
                     >
                       Сохранить
+                    </Button>
+                    <Button
+                      leftSection={<IconDownload size={16} />}
+                      onClick={handleDownloadPromptJSON}
+                      variant="light"
+                      color="blue"
+                      size="sm"
+                    >
+                      Download JSON
                     </Button>
                     {selectedPrompt !== 'new' && (
                       <Button

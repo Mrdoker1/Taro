@@ -1,10 +1,27 @@
 import { Paper, TextInput, Button, Stack, Group, Collapse, Text, Box, UnstyledButton } from '@mantine/core';
-import { IconPlus, IconTrash, IconChevronDown, IconChevronUp } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconGripVertical } from '@tabler/icons-react';
 import { useState } from 'react';
+import { useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { BlockEditor } from './BlockEditor';
 
-export function PageEditor({ page, pageIndex, onChange, onRemove }) {
+export function PageEditor({ id, page, pageIndex, onChange, onRemove }) {
   const [expanded, setExpanded] = useState(false);
+  
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handlePageChange = (field, value) => {
     onChange({ ...page, [field]: value });
@@ -29,18 +46,33 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
 
   return (
     <Paper
+      ref={setNodeRef}
       p="md"
       style={{
+        ...style,
         backgroundColor: '#111114',
         border: '1px solid #27272A',
         borderRadius: '8px',
       }}
     >
-      <Group justify="space-between" mb="sm">
-        <Text fw={500} size="sm" c="#FFFFFF">
-          Page {pageIndex + 1}: {page.title || 'Untitled'}
-        </Text>
-        <Group gap="xs">
+      <Group gap="xs" mb="sm">
+        <Box
+          {...attributes}
+          {...listeners}
+          style={{
+            cursor: isDragging ? 'grabbing' : 'grab',
+            color: '#71717A',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <IconGripVertical size={16} />
+        </Box>
+        <Group justify="space-between" style={{ flex: 1 }}>
+          <Text fw={500} size="sm" c="#FFFFFF">
+            Page {pageIndex + 1}: {page.title || 'Untitled'}
+          </Text>
+          <Group gap="xs">
           <Button
             variant="subtle"
             size="xs"
@@ -76,6 +108,7 @@ export function PageEditor({ page, pageIndex, onChange, onRemove }) {
           >
             Remove
           </Button>
+          </Group>
         </Group>
       </Group>
 
