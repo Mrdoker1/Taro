@@ -110,7 +110,7 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
           <IconGripVertical size={20} />
         </Box>
         <Group justify="space-between" style={{ flex: 1 }}>
-          <Text fw={600} c="#10B981" size="md">
+          <Text fw={600} c="#8B5CF6" size="md">
             Chapter {chapterIndex + 1}: {chapter.title || 'Untitled'}
           </Text>
           <Group gap="xs">
@@ -215,8 +215,8 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
               marginTop: '16px',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#10B981';
-              e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.05)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = '#27272A';

@@ -146,8 +146,8 @@ export function PageEditor({ id, page, pageIndex, onChange, onRemove }) {
               gap: '8px',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#10B981';
-              e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.05)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = '#27272A';

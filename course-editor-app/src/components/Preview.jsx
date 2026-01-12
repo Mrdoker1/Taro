@@ -51,7 +51,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
       case 'card':
         return (
           <Paper p="md" withBorder>
-            <Text fw={600} c="#10B981">
+            <Text fw={600} c="#8B5CF6">
               Card: {block.cardId || 'Unknown'}
             </Text>
             <Text size="sm" c="dimmed">
@@ -74,7 +74,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
       onClose={onClose}
       size="90%"
       title={
-        <Text size="xl" fw={700} c="#10B981">
+        <Text size="xl" fw={700} c="#8B5CF6">
           {translation.title}
         </Text>
       }
@@ -97,7 +97,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
           <Group mb="md">
             <Button
               variant={selectedLang === 'ru' ? 'filled' : 'light'}
-              color="emerald"
+              color="violet"
               onClick={() => setSelectedLang('ru')}
               size="xs"
             >
@@ -105,7 +105,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
             </Button>
             <Button
               variant={selectedLang === 'en' ? 'filled' : 'light'}
-              color="emerald"
+              color="violet"
               onClick={() => setSelectedLang('en')}
               size="xs"
             >
@@ -117,7 +117,7 @@ export function Preview({ opened, onClose, course, lang = 'ru' }) {
             <Stack gap="md">
               {(translation.chapters || []).map((chapter, chapterIndex) => (
                 <Box key={chapterIndex}>
-                  <Text fw={600} c="#10B981" mb="xs">
+                  <Text fw={600} c="#8B5CF6" mb="xs">
                     {chapter.title}
                   </Text>
                   <Stack gap="xs">

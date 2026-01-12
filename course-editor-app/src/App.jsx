@@ -709,7 +709,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSave}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Save Course
@@ -769,7 +769,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSaveDeck}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -813,7 +813,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSaveSpread}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -857,7 +857,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSavePrompt}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -901,7 +901,7 @@ function App() {
                       leftSection={<IconDeviceFloppy size={16} />}
                       onClick={handleSaveUser}
                       loading={saving}
-                      color="emerald"
+                      color="violet"
                       size="sm"
                     >
                       Сохранить
@@ -1096,7 +1096,7 @@ function App() {
           <Button
             onClick={handleCreateCourse}
             loading={loading}
-            color="emerald"
+            color="violet"
           >
             Create Course
           </Button>

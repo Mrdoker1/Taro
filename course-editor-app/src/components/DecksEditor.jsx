@@ -106,7 +106,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Основная информация
           </Title>
 
@@ -144,7 +144,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Переводы
           </Title>
 
@@ -224,7 +224,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
           }}
         >
           <Group justify="space-between" mb="lg">
-            <Title order={3} c="#10B981">
+            <Title order={3} c="#8B5CF6">
               Карты ({localData.cards?.length || 0})
             </Title>
             <Button
@@ -256,7 +256,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                 });
               }}
               variant="light"
-              color="emerald"
+              color="violet"
               size="sm"
             >
               Добавить карту

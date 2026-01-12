@@ -212,8 +212,8 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
               marginTop: '16px',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.borderColor = '#10B981';
-              e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+              e.currentTarget.style.borderColor = '#8B5CF6';
+              e.currentTarget.style.backgroundColor = 'rgba(139, 92, 246, 0.05)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.borderColor = '#27272A';
@@ -323,7 +323,7 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
           {/* Curriculum */}
           <Paper p="xl">
             <Group mb="xl" align="center">
-              <IconBook size={20} color="#10B981" />
+              <IconBook size={20} color="#8B5CF6" />
               <Title order={4} c="#FFFFFF" fw={600} tt="uppercase" style={{ letterSpacing: '0.5px', fontSize: '14px' }}>
                 Curriculum
               </Title>

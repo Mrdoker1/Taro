@@ -122,7 +122,7 @@ export function UsersEditor({ selectedUser, userData, onUserChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             {isNewUser ? 'Создание пользователя' : 'Основная информация'}
           </Title>
 
@@ -218,7 +218,7 @@ export function UsersEditor({ selectedUser, userData, onUserChange }) {
             borderRadius: '12px',
           }}
         >
-          <Title order={3} c="#10B981" mb="lg">
+          <Title order={3} c="#8B5CF6" mb="lg">
             Подписка
           </Title>
 
@@ -346,7 +346,7 @@ export function UsersEditor({ selectedUser, userData, onUserChange }) {
               borderRadius: '12px',
             }}
           >
-            <Title order={3} c="#10B981" mb="lg">
+            <Title order={3} c="#8B5CF6" mb="lg">
               Email уведомления
             </Title>
 
@@ -400,7 +400,7 @@ export function UsersEditor({ selectedUser, userData, onUserChange }) {
               borderRadius: '12px',
             }}
           >
-            <Title order={3} c="#10B981" mb="lg">
+            <Title order={3} c="#8B5CF6" mb="lg">
               Системная информация
             </Title>
 

@@ -63,7 +63,7 @@ export function Sidebar({
               color: '#FFFFFF',
               fontWeight: 600,
               '&:focus': {
-                borderColor: '#10B981',
+                borderColor: '#8B5CF6',
               },
             },
           }}
@@ -91,7 +91,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -100,11 +100,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -126,7 +126,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateDeck}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новая колода
@@ -156,7 +156,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -165,11 +165,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -191,7 +191,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateCourse}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               New Course
@@ -221,7 +221,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -230,11 +230,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -256,7 +256,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateSpread}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый расклад
@@ -286,7 +286,7 @@ export function Sidebar({
                       width: '100%',
                       padding: '10px 12px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       fontSize: '13px',
                       fontWeight: 500,
@@ -295,11 +295,11 @@ export function Sidebar({
                       cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
@@ -321,7 +321,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreatePrompt}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый шаблон
@@ -342,27 +342,53 @@ export function Sidebar({
                 ({(users || []).length})
               </Text>
             </Group>
-            <Select
-              value={usersAppFilter}
-              onChange={onUsersAppFilterChange}
-              data={[
-                { value: '', label: 'Все приложения' },
-                { value: 'taro', label: 'Taro' },
-                { value: 'doc-scan', label: 'Doc Scan' },
-              ]}
-              size="xs"
-              styles={{
-                input: {
-                  backgroundColor: '#27272A',
-                  borderColor: '#3F3F46',
-                  color: '#FFFFFF',
-                  fontSize: '12px',
-                  '&:focus': {
-                    borderColor: '#10B981',
+            <Group gap={4}>
+              <Button
+                size="xs"
+                variant={usersAppFilter === 'taro' ? 'filled' : 'subtle'}
+                color={usersAppFilter === 'taro' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('taro')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
                   },
-                },
-              }}
-            />
+                }}
+              >
+                Taro
+              </Button>
+              <Button
+                size="xs"
+                variant={usersAppFilter === 'doc-scan' ? 'filled' : 'subtle'}
+                color={usersAppFilter === 'doc-scan' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('doc-scan')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
+                  },
+                }}
+              >
+                Doc Scan
+              </Button>
+              <Button
+                size="xs"
+                variant={usersAppFilter === '' ? 'filled' : 'subtle'}
+                color={usersAppFilter === '' ? 'violet' : 'gray'}
+                onClick={() => onUsersAppFilterChange('')}
+                styles={{
+                  root: {
+                    fontSize: '11px',
+                    height: '28px',
+                    padding: '0 12px',
+                  },
+                }}
+              >
+                Все
+              </Button>
+            </Group>
           </Box>
 
           <ScrollArea style={{ flex: 1 }}>
@@ -376,7 +402,7 @@ export function Sidebar({
                     style={{
                       padding: '12px 16px',
                       borderRadius: '8px',
-                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      backgroundColor: isSelected ? '#8B5CF6' : 'transparent',
                       color: isSelected ? '#FFFFFF' : '#A1A1AA',
                       transition: 'all 0.2s',
                       fontSize: '13px',
@@ -384,18 +410,18 @@ export function Sidebar({
                       textAlign: 'left',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
                       e.currentTarget.style.color = '#FFFFFF';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.backgroundColor = isSelected ? '#8B5CF6' : 'transparent';
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
                     <Text size="sm" fw={500} truncate>
                       {user.email}
                     </Text>
-                    <Text size="xs" c="dimmed">
+                    <Text size="xs" c={isSelected ? 'rgba(255, 255, 255, 0.7)' : 'dimmed'}>
                       {user.appType} • {user.role}
                     </Text>
                   </UnstyledButton>
@@ -415,7 +441,7 @@ export function Sidebar({
               leftSection={<IconPlus size={16} />}
               onClick={onCreateUser}
               variant="light"
-              color="emerald"
+              color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый пользователь
