@@ -50,9 +50,10 @@ export function Sidebar({
         display: 'flex',
         flexDirection: 'column',
         height: '100vh',
+        overflow: 'hidden',
       }}
     >
-      <Box p="lg">
+      <Box p="lg" style={{ flexShrink: 0 }}>
         <Select
           value={activeSection}
           onChange={onSectionChange}
@@ -73,14 +74,20 @@ export function Sidebar({
 
       {/* Decks List */}
       {activeSection === 'decks' && (
-        <>
-          <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Колоды
-            </Text>
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box px="lg" pb="md" style={{ flexShrink: 0 }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Колоды
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({decks?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <Box style={{ flex: 1, minHeight: 0 }}>
+            <ScrollArea h="100%" px="md">
             <Stack gap="xs">
               {decks?.map((deck) => {
                 const isSelected = selectedDeck === (deck.key || deck.id);
@@ -119,9 +126,10 @@ export function Sidebar({
                 </Text>
               )}
             </Stack>
-          </ScrollArea>
+            </ScrollArea>
+          </Box>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Button
               fullWidth
               leftSection={<IconPlus size={16} />}
@@ -133,19 +141,25 @@ export function Sidebar({
               Новая колода
             </Button>
           </Box>
-        </>
+        </Box>
       )}
 
       {/* Courses List */}
       {activeSection === 'courses' && (
-        <>
-          <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Курсы
-            </Text>
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box px="lg" pb="md" style={{ flexShrink: 0 }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Курсы
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({courses?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <Box style={{ flex: 1, minHeight: 0 }}>
+            <ScrollArea h="100%" px="md">
             <Stack gap="xs">
               {courses.map((slug) => {
                 const isSelected = selectedCourse === slug;
@@ -184,9 +198,10 @@ export function Sidebar({
                 </Text>
               )}
             </Stack>
-          </ScrollArea>
+            </ScrollArea>
+          </Box>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Button
               fullWidth
               leftSection={<IconPlus size={16} />}
@@ -198,19 +213,25 @@ export function Sidebar({
               New Course
             </Button>
           </Box>
-        </>
+        </Box>
       )}
 
       {/* Spreads List */}
       {activeSection === 'spreads' && (
-        <>
-          <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Расклады
-            </Text>
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box px="lg" pb="md" style={{ flexShrink: 0 }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Расклады
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({spreads?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <Box style={{ flex: 1, minHeight: 0 }}>
+            <ScrollArea h="100%" px="md">
             <Stack gap="xs">
               {spreads?.map((spread) => {
                 const isSelected = selectedSpread === (spread.id || spread.key);
@@ -249,9 +270,10 @@ export function Sidebar({
                 </Text>
               )}
             </Stack>
-          </ScrollArea>
+            </ScrollArea>
+          </Box>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Button
               fullWidth
               leftSection={<IconPlus size={16} />}
@@ -263,19 +285,25 @@ export function Sidebar({
               Новый расклад
             </Button>
           </Box>
-        </>
+        </Box>
       )}
 
       {/* Prompts List */}
       {activeSection === 'prompts' && (
-        <>
-          <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Промпт-шаблоны
-            </Text>
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box px="lg" pb="md" style={{ flexShrink: 0 }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Промпт-шаблоны
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({prompts?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <Box style={{ flex: 1, minHeight: 0 }}>
+            <ScrollArea h="100%" px="md">
             <Stack gap="xs">
               {prompts?.map((prompt) => {
                 const isSelected = selectedPrompt === prompt.key;
@@ -314,9 +342,10 @@ export function Sidebar({
                 </Text>
               )}
             </Stack>
-          </ScrollArea>
+            </ScrollArea>
+          </Box>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Button
               fullWidth
               leftSection={<IconPlus size={16} />}
@@ -328,13 +357,13 @@ export function Sidebar({
               Новый шаблон
             </Button>
           </Box>
-        </>
+        </Box>
       )}
 
       {/* Users Section */}
       {activeSection === 'users' && (
-        <>
-          <Box p="md" style={{ borderBottom: '1px solid #27272A' }}>
+        <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <Box px="lg" pb="md" style={{ flexShrink: 0 }}>
             <Group justify="space-between" mb="xs">
               <Text size="xs" fw={700} tt="uppercase" c="#71717A">
                 ПОЛЬЗОВАТЕЛИ
@@ -392,7 +421,8 @@ export function Sidebar({
             </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 350px)" px="sm">
+          <Box style={{ flex: 1, minHeight: 0 }}>
+            <ScrollArea h="100%" px="sm">
             <Stack gap={0}>
               {(users || []).map((user) => {
                 const isSelected = selectedUser === user._id;
@@ -434,9 +464,10 @@ export function Sidebar({
                 </Text>
               )}
             </Stack>
-          </ScrollArea>
+            </ScrollArea>
+          </Box>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Stack gap="xs">
               <Button
                 fullWidth
@@ -460,7 +491,7 @@ export function Sidebar({
               </Button>
             </Stack>
           </Box>
-        </>
+        </Box>
       )}
     </Box>
   );
