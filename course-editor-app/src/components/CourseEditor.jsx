@@ -16,7 +16,7 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core';
-import { IconBook, IconPlus } from '@tabler/icons-react';
+import { IconBook, IconPlus, IconDownload } from '@tabler/icons-react';
 import {
   DndContext,
   closestCenter,
@@ -84,7 +84,11 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
   const handleAddChapter = (lang) => {
     const newChapters = [
       ...(courseData.translations[lang].chapters || []),
-      { title: 'New Chapter', pages: [] },
+      { 
+        _id: `chapter-${Date.now()}-${Math.random()}`,
+        title: 'New Chapter', 
+        pages: [] 
+      },
     ];
     handleTranslationChange(lang, 'chapters', newChapters);
   };
@@ -96,16 +100,40 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
     handleTranslationChange(lang, 'chapters', newChapters);
   };
 
+  const handleDownloadJSON = () => {
+    const dataStr = JSON.stringify(courseData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `course-${courseData.key || 'backup'}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   const handleDragEnd = (lang, event) => {
     const { active, over } = event;
 
     if (active.id !== over.id) {
       const chapters = courseData.translations[lang].chapters;
-      const oldIndex = chapters.findIndex((_, i) => `chapter-${i}` === active.id);
-      const newIndex = chapters.findIndex((_, i) => `chapter-${i}` === over.id);
+      const oldIndex = chapters.findIndex((ch) => ch._id === active.id);
+      const newIndex = chapters.findIndex((ch) => ch._id === over.id);
 
       const newChapters = arrayMove(chapters, oldIndex, newIndex);
-      handleTranslationChange(lang, 'chapters', newChapters);
+      
+      // Обновляем состояние напрямую, чтобы избежать задержек
+      setCourseData({
+        ...courseData,
+        translations: {
+          ...courseData.translations,
+          [lang]: {
+            ...courseData.translations[lang],
+            chapters: newChapters,
+          },
+        },
+      });
     }
   };
 
@@ -142,20 +170,26 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
             onDragEnd={(event) => handleDragEnd(lang, event)}
           >
             <SortableContext
-              items={(translation.chapters || []).map((_, i) => `chapter-${i}`)}
+              items={(translation.chapters || []).map((ch) => ch._id || `temp-${Math.random()}`)}
               strategy={verticalListSortingStrategy}
             >
               <Stack gap="lg">
-                {(translation.chapters || []).map((chapter, chapterIndex) => (
-                  <ChapterEditor
-                    key={`chapter-${chapterIndex}`}
-                    id={`chapter-${chapterIndex}`}
-                    chapter={chapter}
-                    chapterIndex={chapterIndex}
-                    onChange={(newChapter) => handleChapterChange(lang, chapterIndex, newChapter)}
-                    onRemove={() => handleRemoveChapter(lang, chapterIndex)}
-                  />
-                ))}
+                {(translation.chapters || []).map((chapter, chapterIndex) => {
+                  // Генерируем уникальный ID если его нет
+                  if (!chapter._id) {
+                    chapter._id = `chapter-${Date.now()}-${chapterIndex}`;
+                  }
+                  return (
+                    <ChapterEditor
+                      key={chapter._id}
+                      id={chapter._id}
+                      chapter={chapter}
+                      chapterIndex={chapterIndex}
+                      onChange={(newChapter) => handleChapterChange(lang, chapterIndex, newChapter)}
+                      onRemove={() => handleRemoveChapter(lang, chapterIndex)}
+                    />
+                  );
+                })}
             
               </Stack>
             </SortableContext>

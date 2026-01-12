@@ -3,10 +3,31 @@ import { IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconGripVertical }
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { PageEditor } from './PageEditor';
 
 export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove }) {
   const [expanded, setExpanded] = useState(false);
+  
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
   
   const {
     attributes,
@@ -34,7 +55,14 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
   };
 
   const handleAddPage = () => {
-    const newPages = [...(chapter.pages || []), { title: 'New Page', blocks: [] }];
+    const newPages = [
+      ...(chapter.pages || []), 
+      { 
+        _id: `page-${Date.now()}-${Math.random()}`,
+        title: 'New Page', 
+        blocks: [] 
+      }
+    ];
     handleChapterChange('pages', newPages);
     setExpanded(true);
   };
@@ -42,6 +70,19 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
   const handleRemovePage = (pageIndex) => {
     const newPages = chapter.pages.filter((_, i) => i !== pageIndex);
     handleChapterChange('pages', newPages);
+  };
+
+  const handlePageDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over.id) {
+      const pages = chapter.pages;
+      const oldIndex = pages.findIndex((p) => p._id === active.id);
+      const newIndex = pages.findIndex((p) => p._id === over.id);
+
+      const newPages = arrayMove(pages, oldIndex, newIndex);
+      handleChapterChange('pages', newPages);
+    }
   };
 
   return (
@@ -88,7 +129,7 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
                 },
               }}
             >
-              Pages
+              Pages ({(chapter.pages || []).length})
             </Button>
             <Button
               variant="subtle"
@@ -127,46 +168,66 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
             marginTop: '16px',
           }}
         >
-          <Stack gap="md">
-            {(chapter.pages || []).map((page, pageIndex) => (
-              <PageEditor
-                key={pageIndex}
-                page={page}
-                pageIndex={pageIndex}
-                onChange={(newPage) => handlePageChange(pageIndex, newPage)}
-                onRemove={() => handleRemovePage(pageIndex)}
-              />
-            ))}
-            <UnstyledButton
-              onClick={handleAddPage}
-              style={{
-                width: '100%',
-                padding: '24px',
-                border: '2px dashed #27272A',
-                borderRadius: '8px',
-                backgroundColor: 'transparent',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = '#10B981';
-                e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = '#27272A';
-                e.currentTarget.style.backgroundColor = 'transparent';
-              }}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handlePageDragEnd}
+          >
+            <SortableContext
+              items={(chapter.pages || []).map((p) => p._id || `temp-${Math.random()}`)}
+              strategy={verticalListSortingStrategy}
             >
-              <IconPlus size={16} color="#71717A" />
-              <Text c="#71717A" size="sm">
-                Add New Page
-              </Text>
-            </UnstyledButton>
-          </Stack>
+              <Stack gap="md">
+                {(chapter.pages || []).map((page, pageIndex) => {
+                  // Генерируем уникальный ID если его нет
+                  if (!page._id) {
+                    page._id = `page-${Date.now()}-${pageIndex}`;
+                  }
+                  return (
+                    <PageEditor
+                      key={page._id}
+                      id={page._id}
+                      page={page}
+                      pageIndex={pageIndex}
+                      onChange={(newPage) => handlePageChange(pageIndex, newPage)}
+                      onRemove={() => handleRemovePage(pageIndex)}
+                    />
+                  );
+                })}
+              </Stack>
+            </SortableContext>
+          </DndContext>
+          
+          <UnstyledButton
+            onClick={handleAddPage}
+            style={{
+              width: '100%',
+              padding: '24px',
+              border: '2px dashed #27272A',
+              borderRadius: '8px',
+              backgroundColor: 'transparent',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              marginTop: '16px',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = '#10B981';
+              e.currentTarget.style.backgroundColor = 'rgba(16, 185, 129, 0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = '#27272A';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
+          >
+            <IconPlus size={16} color="#71717A" />
+            <Text c="#71717A" size="sm">
+              Add New Page
+            </Text>
+          </UnstyledButton>
         </Box>
       </Collapse>
     </Paper>
