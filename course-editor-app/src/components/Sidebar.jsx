@@ -333,8 +333,8 @@ export function Sidebar({
 
       {/* Users Section */}
       {activeSection === 'users' && (
-        <>
-          <Box p="md" style={{ borderBottom: '1px solid #27272A' }}>
+        <Box style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
+          <Box p="md" style={{ borderBottom: '1px solid #27272A', flexShrink: 0 }}>
             <Group justify="space-between" mb="xs">
               <Text size="xs" fw={700} tt="uppercase" c="#71717A">
                 ПОЛЬЗОВАТЕЛИ
@@ -392,7 +392,7 @@ export function Sidebar({
             </Group>
           </Box>
 
-          <ScrollArea style={{ flex: 1 }}>
+          <ScrollArea style={{ flex: 1, minHeight: 0 }}>
             <Stack gap={0} p="sm">
               {(users || []).map((user) => {
                 const isSelected = selectedUser === user._id;
@@ -436,7 +436,7 @@ export function Sidebar({
             </Stack>
           </ScrollArea>
 
-          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+          <Box p="md" style={{ borderTop: '1px solid #27272A', flexShrink: 0 }}>
             <Stack gap="xs">
               <Button
                 fullWidth
@@ -460,7 +460,7 @@ export function Sidebar({
               </Button>
             </Stack>
           </Box>
-        </>
+        </Box>
       )}
     </Box>
   );
