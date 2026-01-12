@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Box, Title, Text, Paper, Stack, TextInput, Textarea, NumberInput, Switch, Group, Tabs, ScrollArea, Select, Button, ActionIcon } from '@mantine/core';
+import { Box, Title, Text, Paper, Stack, TextInput, Textarea, NumberInput, Switch, Group, Tabs, ScrollArea, Select, Button, ActionIcon, Grid, Card } from '@mantine/core';
 import { IconPlus, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { spreadsApi, promptTemplatesApi } from '../api/client';
@@ -177,6 +177,222 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 onChange={(e) => handleChange({ ...localData, paid: e.currentTarget.checked })}
               />
             </Group>
+          </Stack>
+        </Paper>
+
+        <Paper
+          p="xl"
+          mb="xl"
+          style={{
+            backgroundColor: '#111114',
+            border: '1px solid #27272A',
+            borderRadius: '12px',
+          }}
+        >
+          <Title order={3} c="#10B981" mb="lg">
+            Схема расклада и метаданные
+          </Title>
+
+          <Stack gap="lg">
+            <Box>
+              <Text size="sm" fw={500} mb="xs" c="#10B981">
+                Схема (Grid)
+              </Text>
+              <Text size="xs" c="dimmed" mb="md">
+                Создайте визуальную схему расклада. 0 = пустая ячейка, 1-{localData.cardsCount} = позиции карт (каждая позиция уникальна)
+              </Text>
+              
+              <Stack gap="sm">
+                {(localData.grid || []).map((row, rowIndex) => (
+                  <Group key={rowIndex} gap="xs" align="flex-start">
+                    <Text c="dimmed" size="sm" style={{ minWidth: '50px', paddingTop: '8px' }}>
+                      Ряд {rowIndex + 1}:
+                    </Text>
+                    <Group gap="xs" style={{ flex: 1 }}>
+                      {row.map((cellValue, colIndex) => {
+                        // Получаем все используемые позиции (кроме текущей ячейки)
+                        const allPositions = (localData.grid || [])
+                          .flatMap((r, rIdx) => 
+                            r.map((val, cIdx) => {
+                              // Исключаем текущую ячейку из проверки
+                              if (rIdx === rowIndex && cIdx === colIndex) return null;
+                              return val;
+                            })
+                          )
+                          .filter(v => v !== null && v > 0);
+                        
+                        return (
+                          <Select
+                            key={colIndex}
+                            value={cellValue.toString()}
+                            onChange={(value) => {
+                              const newGrid = [...localData.grid];
+                              newGrid[rowIndex][colIndex] = parseInt(value) || 0;
+                              handleChange({ ...localData, grid: newGrid });
+                            }}
+                            data={[
+                              { value: '0', label: '—' },
+                              ...Array.from({ length: localData.cardsCount || 1 }, (_, i) => i + 1)
+                                .filter(pos => !allPositions.includes(pos) || pos === cellValue)
+                                .map(pos => ({ value: pos.toString(), label: pos.toString() }))
+                            ]}
+                            style={{ width: '70px' }}
+                            size="sm"
+                            searchable={false}
+                            allowDeselect={false}
+                          />
+                        );
+                      })}
+                      <ActionIcon
+                        color="blue"
+                        variant="subtle"
+                        onClick={() => {
+                          const newGrid = [...localData.grid];
+                          newGrid[rowIndex] = [...newGrid[rowIndex], 0];
+                          handleChange({ ...localData, grid: newGrid });
+                        }}
+                        size="sm"
+                      >
+                        <IconPlus size={16} />
+                      </ActionIcon>
+                      {row.length > 1 && (
+                        <ActionIcon
+                          color="orange"
+                          variant="subtle"
+                          onClick={() => {
+                            const newGrid = [...localData.grid];
+                            newGrid[rowIndex] = newGrid[rowIndex].slice(0, -1);
+                            handleChange({ ...localData, grid: newGrid });
+                          }}
+                          size="sm"
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      )}
+                    </Group>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      onClick={() => {
+                        const newGrid = localData.grid.filter((_, i) => i !== rowIndex);
+                        handleChange({ ...localData, grid: newGrid.length > 0 ? newGrid : [[0]] });
+                      }}
+                    >
+                      <IconTrash size={18} />
+                    </ActionIcon>
+                  </Group>
+                ))}
+              </Stack>
+
+              <Group mt="md">
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  variant="light"
+                  color="emerald"
+                  size="sm"
+                  onClick={() => {
+                    const newGrid = [...(localData.grid || []), [0]];
+                    handleChange({ ...localData, grid: newGrid });
+                  }}
+                >
+                  Добавить ряд
+                </Button>
+              </Group>
+            </Box>
+
+            <Box
+              style={{
+                borderTop: '1px solid #27272A',
+                paddingTop: '1rem',
+              }}
+            >
+              <Text size="sm" fw={500} mb="xs" c="#10B981">
+                Метаданные позиций
+              </Text>
+              <Text size="xs" c="dimmed" mb="md">
+                Укажите названия для каждой позиции карты в раскладе
+              </Text>
+
+              <Stack gap="md">
+                {Array.from({ length: localData.cardsCount || 1 }, (_, i) => i + 1).map((position) => {
+                  const metaKey = position.toString();
+                  const metaItem = localData.meta?.[metaKey] || { label: { ru: '', en: '' } };
+
+                  return (
+                    <Paper
+                      key={position}
+                      p="md"
+                      style={{
+                        backgroundColor: '#1A1A1D',
+                        border: '1px solid #3F3F46',
+                        borderRadius: '8px',
+                      }}
+                    >
+                      <Group mb="xs">
+                        <Box
+                          style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '50%',
+                            backgroundColor: '#10B981',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: 700,
+                            color: '#000',
+                          }}
+                        >
+                          {position}
+                        </Box>
+                        <Text fw={500} c="#10B981">
+                          Позиция {position}
+                        </Text>
+                      </Group>
+                      <Group grow>
+                        <TextInput
+                          label="Название (RU)"
+                          value={metaItem.label?.ru || ''}
+                          onChange={(e) => {
+                            const newMeta = {
+                              ...localData.meta,
+                              [metaKey]: {
+                                ...metaItem,
+                                label: {
+                                  ...(metaItem.label || {}),
+                                  ru: e.target.value,
+                                },
+                              },
+                            };
+                            handleChange({ ...localData, meta: newMeta });
+                          }}
+                          placeholder="Прошлое"
+                          size="sm"
+                        />
+                        <TextInput
+                          label="Name (EN)"
+                          value={metaItem.label?.en || ''}
+                          onChange={(e) => {
+                            const newMeta = {
+                              ...localData.meta,
+                              [metaKey]: {
+                                ...metaItem,
+                                label: {
+                                  ...(metaItem.label || {}),
+                                  en: e.target.value,
+                                },
+                              },
+                            };
+                            handleChange({ ...localData, meta: newMeta });
+                          }}
+                          placeholder="Past"
+                          size="sm"
+                        />
+                      </Group>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            </Box>
           </Stack>
         </Paper>
 
