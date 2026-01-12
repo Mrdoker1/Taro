@@ -75,12 +75,17 @@ export function Sidebar({
       {activeSection === 'decks' && (
         <>
           <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Колоды
-            </Text>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Колоды
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({decks?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <ScrollArea h="calc(100vh - 260px)" px="md">
             <Stack gap="xs">
               {decks?.map((deck) => {
                 const isSelected = selectedDeck === (deck.key || deck.id);
@@ -140,12 +145,17 @@ export function Sidebar({
       {activeSection === 'courses' && (
         <>
           <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Курсы
-            </Text>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Курсы
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({courses?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <ScrollArea h="calc(100vh - 260px)" px="md">
             <Stack gap="xs">
               {courses.map((slug) => {
                 const isSelected = selectedCourse === slug;
@@ -205,12 +215,17 @@ export function Sidebar({
       {activeSection === 'spreads' && (
         <>
           <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Расклады
-            </Text>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Расклады
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({spreads?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <ScrollArea h="calc(100vh - 260px)" px="md">
             <Stack gap="xs">
               {spreads?.map((spread) => {
                 const isSelected = selectedSpread === (spread.id || spread.key);
@@ -270,12 +285,17 @@ export function Sidebar({
       {activeSection === 'prompts' && (
         <>
           <Box px="lg" pb="md">
-            <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
-              Промпт-шаблоны
-            </Text>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A" style={{ letterSpacing: '0.5px' }}>
+                Промпт-шаблоны
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({prompts?.length || 0})
+              </Text>
+            </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 250px)" px="md">
+          <ScrollArea h="calc(100vh - 260px)" px="md">
             <Stack gap="xs">
               {prompts?.map((prompt) => {
                 const isSelected = selectedPrompt === prompt.key;
@@ -334,7 +354,7 @@ export function Sidebar({
       {/* Users Section */}
       {activeSection === 'users' && (
         <>
-          <Box p="md" style={{ borderBottom: '1px solid #27272A' }}>
+          <Box px="lg" pb="md">
             <Group justify="space-between" mb="xs">
               <Text size="xs" fw={700} tt="uppercase" c="#71717A">
                 ПОЛЬЗОВАТЕЛИ
@@ -392,7 +412,7 @@ export function Sidebar({
             </Group>
           </Box>
 
-          <ScrollArea h="calc(100vh - 350px)" px="sm">
+          <ScrollArea h="calc(100vh - 330px)" px="sm">
             <Stack gap={0}>
               {(users || []).map((user) => {
                 const isSelected = selectedUser === user._id;
