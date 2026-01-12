@@ -189,3 +189,67 @@ export const decksApi = {
     return response.data;
   },
 };
+
+// Users API Client
+const usersApiClient = axios.create({
+  baseURL: '/auth',
+});
+
+usersApiClient.interceptors.request.use((config) => {
+  const token = localStorage.getItem('editor-token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Handle auth errors
+usersApiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('editor-token');
+      window.location.href = '/course-editor';
+    }
+    return Promise.reject(error);
+  }
+);
+
+export const usersApi = {
+  // Get all users
+  getAllUsers: async (appType) => {
+    const params = appType ? { appType } : {};
+    const response = await usersApiClient.get('/users', { params });
+    return response.data;
+  },
+
+  // Create user
+  createUser: async (userData) => {
+    const response = await usersApiClient.post('/users', userData);
+    return response.data;
+  },
+
+  // Update user
+  updateUser: async (userId, userData) => {
+    const response = await usersApiClient.patch(`/users/${userId}`, userData);
+    return response.data;
+  },
+
+  // Delete user
+  deleteUser: async (userId) => {
+    const response = await usersApiClient.delete(`/users/${userId}`);
+    return response.data;
+  },
+
+  // Send confirmation email
+  sendConfirmationEmail: async (userId) => {
+    const response = await usersApiClient.post(`/users/${userId}/send-confirmation`);
+    return response.data;
+  },
+
+  // Send password reset email
+  sendPasswordResetEmail: async (userId) => {
+    const response = await usersApiClient.post(`/users/${userId}/send-password-reset`);
+    return response.data;
+  },
+};

@@ -8,6 +8,9 @@ import {
   Patch,
   Query,
   Res,
+  Delete,
+  Param,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -174,5 +177,98 @@ export class AuthController {
     } catch {
       res.status(404).send('Страница не найдена');
     }
+  }
+
+  // Управление пользователями (для админ-панели)
+
+  @Get('users')
+  @ApiOperation({ summary: 'Получить список всех пользователей (admin)' })
+  @ApiResponse({ status: 200, description: 'Список пользователей' })
+  async getAllUsers(
+    @Query('appType') appType?: string,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.getAllUsers(appType);
+  }
+
+  @Post('users')
+  @ApiOperation({ summary: 'Создать нового пользователя (admin)' })
+  @ApiResponse({ status: 201, description: 'Пользователь создан' })
+  async createUserByAdmin(
+    @Body() createUserDto: CreateUserDto,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.register(createUserDto);
+  }
+
+  @Patch('users/:id')
+  @ApiOperation({ summary: 'Обновить данные пользователя (admin)' })
+  @ApiResponse({ status: 200, description: 'Пользователь обновлен' })
+  async updateUserById(
+    @Param('id') id: string,
+    @Body() updateData: any,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.updateUser(id, updateData);
+  }
+
+  @Delete('users/:id')
+  @ApiOperation({ summary: 'Удалить пользователя (admin)' })
+  @ApiResponse({ status: 200, description: 'Пользователь удален' })
+  async deleteUserById(
+    @Param('id') id: string,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.deleteUser(id);
+  }
+
+  @Post('users/:id/send-confirmation')
+  @ApiOperation({ summary: 'Отправить письмо подтверждения (admin)' })
+  @ApiResponse({ status: 200, description: 'Письмо отправлено' })
+  async sendConfirmationEmail(
+    @Param('id') id: string,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.resendConfirmationEmail(id);
+  }
+
+  @Post('users/:id/send-password-reset')
+  @ApiOperation({ summary: 'Отправить письмо для сброса пароля (admin)' })
+  @ApiResponse({ status: 200, description: 'Письмо отправлено' })
+  async sendPasswordResetEmail(
+    @Param('id') id: string,
+    @Req() req?: any
+  ) {
+    // Простая проверка токена из course-editor
+    const auth = req?.headers?.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) {
+      throw new UnauthorizedException('Unauthorized');
+    }
+    return await this.authService.sendPasswordResetByUserId(id);
   }
 }

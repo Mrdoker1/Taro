@@ -1,5 +1,5 @@
-import { Stack, Button, Text, Box, ScrollArea, UnstyledButton, Select } from '@mantine/core';
-import { IconPlus, IconBook, IconCards, IconSparkles } from '@tabler/icons-react';
+import { Stack, Button, Text, Box, ScrollArea, UnstyledButton, Select, Group } from '@mantine/core';
+import { IconPlus, IconBook, IconCards, IconSparkles, IconUsers } from '@tabler/icons-react';
 
 export function Sidebar({ 
   activeSection, 
@@ -24,12 +24,20 @@ export function Sidebar({
   selectedPrompt,
   onSelectPrompt,
   onCreatePrompt,
+  // Users
+  users,
+  selectedUser,
+  onSelectUser,
+  onCreateUser,
+  usersAppFilter,
+  onUsersAppFilterChange,
 }) {
   const sections = [
     { value: 'courses', label: 'Курсы', icon: IconBook },
     { value: 'decks', label: 'Колоды', icon: IconCards },
     { value: 'spreads', label: 'Расклады', icon: IconCards },
     { value: 'prompts', label: 'Промпт-шаблоны', icon: IconSparkles },
+    { value: 'users', label: 'Пользователи', icon: IconUsers },
   ];
 
   return (
@@ -317,6 +325,100 @@ export function Sidebar({
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
               Новый шаблон
+            </Button>
+          </Box>
+        </>
+      )}
+
+      {/* Users Section */}
+      {activeSection === 'users' && (
+        <>
+          <Box p="md" style={{ borderBottom: '1px solid #27272A' }}>
+            <Group justify="space-between" mb="xs">
+              <Text size="xs" fw={700} tt="uppercase" c="#71717A">
+                ПОЛЬЗОВАТЕЛИ
+              </Text>
+              <Text size="xs" c="#71717A">
+                ({(users || []).length})
+              </Text>
+            </Group>
+            <Select
+              value={usersAppFilter}
+              onChange={onUsersAppFilterChange}
+              data={[
+                { value: '', label: 'Все приложения' },
+                { value: 'taro', label: 'Taro' },
+                { value: 'doc-scan', label: 'Doc Scan' },
+              ]}
+              size="xs"
+              styles={{
+                input: {
+                  backgroundColor: '#27272A',
+                  borderColor: '#3F3F46',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  '&:focus': {
+                    borderColor: '#10B981',
+                  },
+                },
+              }}
+            />
+          </Box>
+
+          <ScrollArea style={{ flex: 1 }}>
+            <Stack gap={0} p="sm">
+              {(users || []).map((user) => {
+                const isSelected = selectedUser === user._id;
+                return (
+                  <UnstyledButton
+                    key={user._id}
+                    onClick={() => onSelectUser(user._id)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: '8px',
+                      backgroundColor: isSelected ? '#10B981' : 'transparent',
+                      color: isSelected ? '#FFFFFF' : '#A1A1AA',
+                      transition: 'all 0.2s',
+                      fontSize: '13px',
+                      fontWeight: 500,
+                      textAlign: 'left',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#059669' : '#27272A';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = isSelected ? '#10B981' : 'transparent';
+                      e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
+                    }}
+                  >
+                    <Text size="sm" fw={500} truncate>
+                      {user.email}
+                    </Text>
+                    <Text size="xs" c="dimmed">
+                      {user.appType} • {user.role}
+                    </Text>
+                  </UnstyledButton>
+                );
+              })}
+              {(!users || users.length === 0) && (
+                <Text c="#71717A" size="sm" ta="center" mt="xl">
+                  Нет пользователей
+                </Text>
+              )}
+            </Stack>
+          </ScrollArea>
+
+          <Box p="md" style={{ borderTop: '1px solid #27272A' }}>
+            <Button
+              fullWidth
+              leftSection={<IconPlus size={16} />}
+              onClick={onCreateUser}
+              variant="light"
+              color="emerald"
+              styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
+            >
+              Новый пользователь
             </Button>
           </Box>
         </>
