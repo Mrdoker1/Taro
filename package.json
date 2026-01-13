@@ -47,6 +47,7 @@
     "fs-extra": "^11.3.0",
     "handlebars": "^4.7.8",
     "hbs": "^4.2.0",
+    "marked": "^17.0.1",
     "mongoose": "^8.10.0",
     "nestjs-resend": "^1.0.1",
     "nodemailer-express-handlebars": "^7.0.0",
