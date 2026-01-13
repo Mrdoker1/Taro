@@ -7,6 +7,21 @@ import { usersApi } from '../api/client';
 // Простой рендер markdown для предпросмотра
 const renderMarkdown = (markdown) => {
   let html = markdown;
+  const savedElements = [];
+  
+  // Изображения ![alt](url) - ПЕРВЫМИ, сохраняем в placeholder
+  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+    const index = savedElements.length;
+    savedElements.push(`<img src="${url}" alt="${alt}" style="max-width: 100%; height: auto; display: block; margin: 16px 0; border-radius: 8px;">`);
+    return `§§§SAVED§${index}§§§`;
+  });
+  
+  // Ссылки [text](url) - сохраняем в placeholder
+  html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, text, url) => {
+    const index = savedElements.length;
+    savedElements.push(`<a href="${url}" style="color: #8b5cf6; text-decoration: underline;">${text}</a>`);
+    return `§§§SAVED§${index}§§§`;
+  });
   
   // Заголовки
   html = html.replace(/^######\s+(.+)$/gm, '<h6 style="font-size: 12px; font-weight: 600; color: #9ca3af; margin: 10px 0 6px 0;">$1</h6>');
@@ -32,8 +47,8 @@ const renderMarkdown = (markdown) => {
   html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: #1f2937; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 12px 0;"><code style="color: #10b981; font-size: 13px;">$1</code></pre>');
   html = html.replace(/`([^`]+)`/g, '<code style="background: #27272A; padding: 2px 6px; border-radius: 3px; color: #dc2626; font-size: 13px;">$1</code>');
   
-  // Ссылки
-  html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color: #8b5cf6; text-decoration: underline;">$1</a>');
+  // Автоматические ссылки (голые URL) - теперь безопасно
+  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color: #8b5cf6; text-decoration: underline;">$1</a>');
   
   // Списки
   html = html.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
@@ -48,6 +63,9 @@ const renderMarkdown = (markdown) => {
   // Параграфы
   html = html.replace(/\n\n/g, '</p><p style="margin: 12px 0;">');
   html = html.replace(/\n/g, '<br>');
+  
+  // Восстанавливаем сохранённые элементы В САМОМ КОНЦЕ
+  html = html.replace(/§§§SAVED§(\d+)§§§/g, (match, index) => savedElements[parseInt(index)]);
   
   return `<p style="margin: 12px 0;">${html}</p>`;
 };
@@ -140,6 +158,10 @@ export default function BulkEmailModal({ opened, onClose, users }) {
           padding: '24px',
           maxHeight: '90vh',
           overflowY: 'auto',
+        },
+        content: {
+          minWidth: '1000px',
+          maxWidth: '1000px',
         },
       }}
     >
@@ -323,6 +345,8 @@ export default function BulkEmailModal({ opened, onClose, users }) {
                     padding: '16px',
                     flex: 1,
                     overflowY: 'auto',
+                    overflowX: 'auto',
+                    maxWidth: '100%',
                   }}
                 >
                   {content ? (

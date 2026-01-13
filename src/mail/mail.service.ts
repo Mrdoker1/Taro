@@ -125,38 +125,51 @@ export class MailService {
   // Конвертация markdown в HTML
   private markdownToHtml(markdown: string): string {
     let html = markdown;
-    
+
     // Сохраняем элементы которые не нужно экранировать
     const htmlElements: string[] = [];
-    
+
+    // Изображения ![alt](url) - ПЕРВЫМИ, до всего остального
+    html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
+      const index = htmlElements.length;
+      htmlElements.push(
+        `<img src="${url}" alt="${alt}" style="max-width: 100%; height: auto; display: block; margin: 16px 0; border-radius: 8px;">`,
+      );
+      this.logger.log(`Найдено изображение: alt="${alt}", url="${url}"`);
+      return `§§§HTMLELEM§${index}§§§`;
+    });
+
     // Горизонтальная линия (---, ***, ___) - ДО экранирования
     html = html.replace(/^([-*_])\1{2,}\s*$/gm, () => {
       const index = htmlElements.length;
       htmlElements.push('<hr>');
       return `§§§HTMLELEM§${index}§§§`;
     });
-    
+
     // Блоки кода (```) - ДО экранирования, чтобы сохранить их
     html = html.replace(/```([\s\S]*?)```/g, (match, code) => {
       const index = htmlElements.length;
       htmlElements.push(`<pre><code>${code}</code></pre>`);
       return `§§§HTMLELEM§${index}§§§`;
     });
-    
+
     // Инлайн код (`) - сохраняем
     html = html.replace(/`([^`]+)`/g, (match, code) => {
       const index = htmlElements.length;
       htmlElements.push(`<code>${code}</code>`);
       return `§§§HTMLELEM§${index}§§§`;
     });
-    
+
     // Экранирование HTML
-    html = html.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    
+    html = html
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+
     // Заголовки (альтернативный синтаксис с подчеркиванием)
     html = html.replace(/^(.+)\n={3,}\s*$/gm, '<h1>$1</h1>');
     html = html.replace(/^(.+)\n-{3,}\s*$/gm, '<h2>$1</h2>');
-    
+
     // Заголовки (стандартный синтаксис с #)
     html = html.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
     html = html.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
@@ -164,10 +177,10 @@ export class MailService {
     html = html.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
     html = html.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
     html = html.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
-    
+
     // Цитаты (>)
     html = html.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
-    
+
     // Жирный и курсив
     html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
     html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
@@ -175,39 +188,49 @@ export class MailService {
     html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
     html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
     html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-    
+
     // Зачеркнутый (~~)
     html = html.replace(/~~(.+?)~~/g, '<del>$1</del>');
-    
+
     // Ссылки [text](url)
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>');
-    
-    // Изображения ![alt](url)
-    html = html.replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1" style="max-width: 100%; height: auto;">');
-    
+    html = html.replace(
+      /\[(.+?)\]\((.+?)\)/g,
+      '<a href="$2" style="color: #8b5cf6; text-decoration: underline;">$1</a>',
+    );
+
+    // Автоматические ссылки (голые URL) - только те что не внутри уже созданных тегов
+    html = html.replace(
+      /(?<!href="|">)(https?:\/\/[^\s&lt;"]+)(?!<\/a>)/g,
+      '<a href="$1" style="color: #8b5cf6; text-decoration: underline;">$1</a>',
+    );
+
     // Нумерованные списки
     html = html.replace(/^\d+\.\s+(.+)$/gm, '<oli>$1</oli>');
     html = html.replace(/(<oli>.*<\/oli>\n?)+/g, '<ol>$&</ol>');
-    html = html.replace(/<\/?oli>/g, (match) => match === '<oli>' ? '<li>' : '</li>');
-    
+    html = html.replace(/<\/?oli>/g, match =>
+      match === '<oli>' ? '<li>' : '</li>',
+    );
+
     // Маркированные списки
     html = html.replace(/^[\*\-\+]\s+(.+)$/gm, '<uli>$1</uli>');
     html = html.replace(/(<uli>.*<\/uli>\n?)+/g, '<ul>$&</ul>');
-    html = html.replace(/<\/?uli>/g, (match) => match === '<uli>' ? '<li>' : '</li>');
-    
+    html = html.replace(/<\/?uli>/g, match =>
+      match === '<uli>' ? '<li>' : '</li>',
+    );
+
     // Чекбоксы
     html = html.replace(/\[ \]/g, '☐');
     html = html.replace(/\[x\]/gi, '☑');
-    
+
     // Параграфы и переносы строк
     html = html.replace(/\n\n+/g, '</p><p>');
     html = html.replace(/\n/g, '<br>');
-    
+
     // Восстанавливаем все HTML элементы
     html = html.replace(/§§§HTMLELEM§(\d+)§§§/g, (match, index) => {
       return htmlElements[parseInt(index)];
     });
-    
+
     return html;
   }
 
