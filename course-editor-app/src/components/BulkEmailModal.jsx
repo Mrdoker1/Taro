@@ -3,71 +3,17 @@ import { Modal, Button, TextInput, Textarea, Stack, Text, Checkbox, Group, Scrol
 import { IconMail, IconSend, IconEye, IconCode } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { usersApi } from '../api/client';
+import { marked } from 'marked';
 
-// Простой рендер markdown для предпросмотра
+// Рендер markdown для предпросмотра с помощью marked
 const renderMarkdown = (markdown) => {
-  let html = markdown;
-  const savedElements = [];
-  
-  // Изображения ![alt](url) - ПЕРВЫМИ, сохраняем в placeholder
-  html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, url) => {
-    const index = savedElements.length;
-    savedElements.push(`<img src="${url}" alt="${alt}" style="max-width: 100%; height: auto; display: block; margin: 16px 0; border-radius: 8px;">`);
-    return `§§§SAVED§${index}§§§`;
+  // Настройка marked
+  marked.setOptions({
+    breaks: true, // Переносы строк как <br>
+    gfm: true, // GitHub Flavored Markdown
   });
-  
-  // Ссылки [text](url) - сохраняем в placeholder
-  html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, text, url) => {
-    const index = savedElements.length;
-    savedElements.push(`<a href="${url}" style="color: #8b5cf6; text-decoration: underline;">${text}</a>`);
-    return `§§§SAVED§${index}§§§`;
-  });
-  
-  // Заголовки
-  html = html.replace(/^######\s+(.+)$/gm, '<h6 style="font-size: 12px; font-weight: 600; color: #9ca3af; margin: 10px 0 6px 0;">$1</h6>');
-  html = html.replace(/^#####\s+(.+)$/gm, '<h5 style="font-size: 14px; font-weight: 600; color: #6b7280; margin: 12px 0 6px 0;">$1</h5>');
-  html = html.replace(/^####\s+(.+)$/gm, '<h4 style="font-size: 16px; font-weight: 600; color: #4b5563; margin: 14px 0 8px 0;">$1</h4>');
-  html = html.replace(/^###\s+(.+)$/gm, '<h3 style="font-size: 18px; font-weight: 600; color: #374151; margin: 16px 0 8px 0;">$1</h3>');
-  html = html.replace(/^##\s+(.+)$/gm, '<h2 style="font-size: 20px; font-weight: 600; color: #1f2937; margin: 18px 0 10px 0;">$1</h2>');
-  html = html.replace(/^#\s+(.+)$/gm, '<h1 style="font-size: 24px; font-weight: 700; color: #fff; margin: 20px 0 12px 0;">$1</h1>');
-  
-  // Горизонтальная линия
-  html = html.replace(/^([-*_]){3,}\s*$/gm, '<hr style="border: none; border-top: 2px solid #27272A; margin: 20px 0;">');
-  
-  // Жирный и курсив
-  html = html.replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/___(.+?)___/g, '<strong><em>$1</em></strong>');
-  html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__(.+?)__/g, '<strong>$1</strong>');
-  html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
-  html = html.replace(/_(.+?)_/g, '<em>$1</em>');
-  html = html.replace(/~~(.+?)~~/g, '<del style="color: #9ca3af;">$1</del>');
-  
-  // Код
-  html = html.replace(/```([\s\S]*?)```/g, '<pre style="background: #1f2937; padding: 12px; border-radius: 6px; overflow-x: auto; margin: 12px 0;"><code style="color: #10b981; font-size: 13px;">$1</code></pre>');
-  html = html.replace(/`([^`]+)`/g, '<code style="background: #27272A; padding: 2px 6px; border-radius: 3px; color: #dc2626; font-size: 13px;">$1</code>');
-  
-  // Автоматические ссылки (голые URL) - теперь безопасно
-  html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color: #8b5cf6; text-decoration: underline;">$1</a>');
-  
-  // Списки
-  html = html.replace(/^\*\s+(.+)$/gm, '<li>$1</li>');
-  html = html.replace(/^-\s+(.+)$/gm, '<li>$1</li>');
-  html = html.replace(/(<li>.*<\/li>\n?)+/g, '<ul style="margin: 12px 0; padding-left: 24px;">$&</ul>');
-  
-  html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
-  
-  // Цитаты
-  html = html.replace(/^>\s+(.+)$/gm, '<blockquote style="border-left: 4px solid #8b5cf6; padding-left: 16px; margin: 16px 0; color: #9ca3af; font-style: italic;">$1</blockquote>');
-  
-  // Параграфы
-  html = html.replace(/\n\n/g, '</p><p style="margin: 12px 0;">');
-  html = html.replace(/\n/g, '<br>');
-  
-  // Восстанавливаем сохранённые элементы В САМОМ КОНЦЕ
-  html = html.replace(/§§§SAVED§(\d+)§§§/g, (match, index) => savedElements[parseInt(index)]);
-  
-  return `<p style="margin: 12px 0;">${html}</p>`;
+
+  return marked.parse(markdown);
 };
 
 export default function BulkEmailModal({ opened, onClose, users }) {
@@ -160,7 +106,7 @@ export default function BulkEmailModal({ opened, onClose, users }) {
           overflowY: 'auto',
         },
         content: {
-          minWidth: '1000px',
+          minWidth: '400px',
           maxWidth: '1000px',
         },
       }}
