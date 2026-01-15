@@ -1,5 +1,5 @@
-import { Paper, TextInput, Button, Stack, Group, Collapse, Text, Box, UnstyledButton } from '@mantine/core';
-import { IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconGripVertical } from '@tabler/icons-react';
+import { Paper, TextInput, Button, Stack, Group, Collapse, Text, Box, UnstyledButton, Menu, ActionIcon } from '@mantine/core';
+import { IconPlus, IconTrash, IconChevronDown, IconChevronUp, IconGripVertical, IconDots, IconDownload, IconUpload } from '@tabler/icons-react';
 import { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -85,6 +85,39 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
     }
   };
 
+  const handleExportChapter = () => {
+    const dataStr = JSON.stringify(chapter, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `chapter-${chapter.title || 'untitled'}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportChapter = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedChapter = JSON.parse(event.target.result);
+            onChange(importedChapter);
+          } catch (error) {
+            alert('Ошибка при импорте главы: ' + error.message);
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
   return (
     <Paper
       ref={setNodeRef}
@@ -131,23 +164,73 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
             >
               Pages ({(chapter.pages || []).length})
             </Button>
-            <Button
-              variant="subtle"
-              color="red"
-              size="sm"
-              leftSection={<IconTrash size={16} />}
-              onClick={onRemove}
-              styles={{
-                root: {
-                  color: '#EF4444',
-                  '&:hover': {
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                  },
-                },
-              }}
-            >
-              Remove
-            </Button>
+            
+            <Menu shadow="md" width={200}>
+              <Menu.Target>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="lg"
+                  styles={{
+                    root: {
+                      color: '#A1A1AA',
+                      '&:hover': {
+                        backgroundColor: '#27272A',
+                      },
+                    },
+                  }}
+                >
+                  <IconDots size={18} />
+                </ActionIcon>
+              </Menu.Target>
+
+              <Menu.Dropdown style={{ backgroundColor: '#18181B', border: '1px solid #27272A' }}>
+                <Menu.Item
+                  leftSection={<IconDownload size={16} />}
+                  onClick={handleExportChapter}
+                  styles={{
+                    item: {
+                      color: '#FFFFFF',
+                      '&:hover': {
+                        backgroundColor: '#27272A',
+                      },
+                    },
+                  }}
+                >
+                  Экспорт главы
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconUpload size={16} />}
+                  onClick={handleImportChapter}
+                  styles={{
+                    item: {
+                      color: '#FFFFFF',
+                      '&:hover': {
+                        backgroundColor: '#27272A',
+                      },
+                    },
+                  }}
+                >
+                  Импорт главы
+                </Menu.Item>
+                <Menu.Divider style={{ borderColor: '#27272A' }} />
+                <Menu.Item
+                  leftSection={<IconTrash size={16} />}
+                  onClick={onRemove}
+                  color="red"
+                  styles={{
+                    item: {
+                      color: '#EF4444',
+                      '&:hover': {
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                      },
+                    },
+                  }}
+                >
+                  Удалить главу
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
       </Group>
