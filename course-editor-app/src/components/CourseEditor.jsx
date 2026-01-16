@@ -331,8 +331,8 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
 
             <Tabs value={activeTab} onChange={setActiveTab} variant="default">
               <Tabs.List mb="xl">
-                <Tabs.Tab value="ru">🇷🇺 Русский</Tabs.Tab>
-                <Tabs.Tab value="en">🇬🇧 Английский</Tabs.Tab>
+                <Tabs.Tab value="ru">Русский</Tabs.Tab>
+                <Tabs.Tab value="en">English</Tabs.Tab>
               </Tabs.List>
 
               <Tabs.Panel value="ru">
