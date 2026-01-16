@@ -12,7 +12,7 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
 
   const renderPreviewContent = () => {
     if (block.type !== 'md' || !block.content) {
-      return <Box c="dimmed">No content to preview</Box>;
+      return <Box c="dimmed">Нет контента для предпросмотра</Box>;
     }
     
     const html = marked.parse(block.content);
@@ -39,14 +39,14 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
     >
       <Group justify="space-between" mb="sm">
         <Select
-          label="Type"
+          label="Тип"
           value={block.type}
           onChange={(value) => handleChange('type', value)}
           data={[
             { value: 'md', label: 'Markdown' },
-            { value: 'image', label: 'Image' },
-            { value: 'card', label: 'Card' },
-            { value: 'video', label: 'Video' },
+            { value: 'image', label: 'Изображение' },
+            { value: 'card', label: 'Карта' },
+            { value: 'video', label: 'Видео' },
           ]}
           style={{ flex: 1 }}
         />
@@ -67,7 +67,7 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
                 },
               }}
             >
-              Preview
+              Предпросмотр
             </Button>
           )}
           <Button
@@ -85,14 +85,14 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
               },
             }}
           >
-            Remove
+            Удалить
           </Button>
         </Group>
       </Group>
 
       {block.type === 'md' && (
         <Textarea
-          label="Markdown Content"
+          label="Markdown контент"
           value={block.content || ''}
           onChange={(e) => handleChange('content', e.target.value)}
           minRows={10}
@@ -110,13 +110,13 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
       {block.type === 'image' && (
         <>
           <TextInput
-            label="Image URL"
+            label="URL изображения"
             value={block.url || ''}
             onChange={(e) => handleChange('url', e.target.value)}
             mb="sm"
           />
           <TextInput
-            label="Caption"
+            label="Подпись"
             value={block.caption || ''}
             onChange={(e) => handleChange('caption', e.target.value)}
           />
@@ -125,7 +125,7 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
 
       {block.type === 'video' && (
         <TextInput
-          label="Video URL"
+          label="URL видео"
           value={block.url || ''}
           onChange={(e) => handleChange('url', e.target.value)}
         />
@@ -134,13 +134,13 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
       {block.type === 'card' && (
         <>
           <TextInput
-            label="Card ID"
+            label="ID карты"
             value={block.cardId || ''}
             onChange={(e) => handleChange('cardId', e.target.value)}
             mb="sm"
           />
           <TextInput
-            label="Deck ID"
+            label="ID колоды"
             value={block.deckId || ''}
             onChange={(e) => handleChange('deckId', e.target.value)}
           />
@@ -151,7 +151,7 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
       <Modal
         opened={previewOpened}
         onClose={() => setPreviewOpened(false)}
-        title="Markdown Preview"
+        title="Предпросмотр Markdown"
         size="lg"
       >
         {renderPreviewContent()}

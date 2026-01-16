@@ -121,7 +121,7 @@ export function PageEditor({ id, page, pageIndex, onChange, onRemove }) {
               },
             }}
           >
-            Blocks
+            Блоки
           </Button>
           
           <Menu shadow="md" width={200}>
@@ -198,7 +198,7 @@ export function PageEditor({ id, page, pageIndex, onChange, onRemove }) {
       </Group>
 
       <TextInput
-        placeholder="Page title"
+        placeholder="Название страницы"
         value={page.title || ''}
         onChange={(e) => handlePageChange('title', e.target.value)}
         mb="sm"
@@ -241,7 +241,7 @@ export function PageEditor({ id, page, pageIndex, onChange, onRemove }) {
           >
             <IconPlus size={14} color="#71717A" />
             <Text c="#71717A" size="xs">
-              Add Block
+              Добавить блок
             </Text>
           </UnstyledButton>
         </Stack>

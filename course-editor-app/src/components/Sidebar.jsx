@@ -210,7 +210,7 @@ export function Sidebar({
               color="violet"
               styles={{ root: { fontSize: '13px', fontWeight: 600 } }}
             >
-              New Course
+              Новый курс
             </Button>
           </Box>
         </Box>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { AppShell, Box, Title, Button, Group, TextInput, Modal, Breadcrumbs, Anchor, Text } from '@mantine/core';
+import { AppShell, Box, Title, Button, Group, TextInput, Modal, Breadcrumbs, Anchor, Text, Menu, ActionIcon } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight, IconDownload } from '@tabler/icons-react';
+import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight, IconDownload, IconUpload, IconDots } from '@tabler/icons-react';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { CourseEditor } from './components/CourseEditor';
@@ -307,6 +307,37 @@ function App() {
     });
   };
 
+  const handleImportCourseJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedCourse = JSON.parse(event.target.result);
+            setCourseData(importedCourse);
+            notifications.show({
+              title: 'Успех',
+              message: 'Курс импортирован успешно',
+              color: 'green',
+            });
+          } catch (error) {
+            notifications.show({
+              title: 'Ошибка',
+              message: 'Ошибка при импорте курса: ' + error.message,
+              color: 'red',
+            });
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
   const handleSave = async () => {
     if (!courseData) return;
     
@@ -563,6 +594,37 @@ function App() {
     });
   };
 
+  const handleImportDeckJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedDeck = JSON.parse(event.target.result);
+            setDeckData(importedDeck);
+            notifications.show({
+              title: 'Успех',
+              message: 'Колода импортирована успешно',
+              color: 'green',
+            });
+          } catch (error) {
+            notifications.show({
+              title: 'Ошибка',
+              message: 'Ошибка при импорте колоды: ' + error.message,
+              color: 'red',
+            });
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
   const handleDeleteDeck = async () => {
     if (!deckData || !confirm('Удалить эту колоду?')) return;
     
@@ -714,53 +776,90 @@ function App() {
                       color="violet"
                       size="sm"
                     >
-                      Save Course
+                      Сохранить
                     </Button>
-                    <Button
-                      leftSection={<IconDownload size={16} />}
-                      onClick={handleDownloadCourseJSON}
-                      variant="light"
-                      color="blue"
-                      size="sm"
-                    >
-                      Download JSON
-                    </Button>
-                    <Button
-                      leftSection={<IconTrash size={16} />}
-                      onClick={handleDelete}
-                      variant="subtle"
-                      color="gray"
-                      size="sm"
-                      styles={{
-                        root: {
-                          color: '#EF4444',
-                          '&:hover': {
-                            backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                            color: '#EF4444',
-                          },
-                        },
-                      }}
-                    >
-                      Delete
-                    </Button>
-                    <Button
-                      leftSection={<IconEye size={16} />}
-                      onClick={() => setPreviewOpened(true)}
-                      variant="subtle"
-                      color="gray"
-                      size="sm"
-                      styles={{
-                        root: {
-                          color: '#A1A1AA',
-                          '&:hover': {
-                            backgroundColor: '#27272A',
-                            color: '#A1A1AA',
-                          },
-                        },
-                      }}
-                    >
-                      Preview
-                    </Button>
+                    
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="lg"
+                          styles={{
+                            root: {
+                              color: '#A1A1AA',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          <IconDots size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+
+                      <Menu.Dropdown style={{ backgroundColor: '#18181B', border: '1px solid #27272A' }}>
+                        <Menu.Item
+                          leftSection={<IconDownload size={16} />}
+                          onClick={handleDownloadCourseJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Экспорт курса
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconUpload size={16} />}
+                          onClick={handleImportCourseJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Импорт курса
+                        </Menu.Item>
+                        <Menu.Divider style={{ borderColor: '#27272A' }} />
+                        <Menu.Item
+                          leftSection={<IconEye size={16} />}
+                          onClick={() => setPreviewOpened(true)}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Предпросмотр
+                        </Menu.Item>
+                        <Menu.Divider style={{ borderColor: '#27272A' }} />
+                        <Menu.Item
+                          leftSection={<IconTrash size={16} />}
+                          onClick={handleDelete}
+                          color="red"
+                          styles={{
+                            item: {
+                              color: '#EF4444',
+                              '&:hover': {
+                                backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                              },
+                            },
+                          }}
+                        >
+                          Удалить курс
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
                   </>
                 )}
                 
@@ -776,35 +875,77 @@ function App() {
                     >
                       Сохранить
                     </Button>
-                    <Button
-                      leftSection={<IconDownload size={16} />}
-                      onClick={handleDownloadDeckJSON}
-                      variant="light"
-                      color="blue"
-                      size="sm"
-                    >
-                      Download JSON
-                    </Button>
-                    {selectedDeck !== 'new' && (
-                      <Button
-                        leftSection={<IconTrash size={16} />}
-                        onClick={handleDeleteDeck}
-                        variant="subtle"
-                        color="gray"
-                        size="sm"
-                        styles={{
-                          root: {
-                            color: '#EF4444',
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                              color: '#EF4444',
+                    
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="lg"
+                          styles={{
+                            root: {
+                              color: '#A1A1AA',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
                             },
-                          },
-                        }}
-                      >
-                        Удалить
-                      </Button>
-                    )}
+                          }}
+                        >
+                          <IconDots size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+
+                      <Menu.Dropdown style={{ backgroundColor: '#18181B', border: '1px solid #27272A' }}>
+                        <Menu.Item
+                          leftSection={<IconDownload size={16} />}
+                          onClick={handleDownloadDeckJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Экспорт колоды
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconUpload size={16} />}
+                          onClick={handleImportDeckJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Импорт колоды
+                        </Menu.Item>
+                        {selectedDeck !== 'new' && (
+                          <>
+                            <Menu.Divider style={{ borderColor: '#27272A' }} />
+                            <Menu.Item
+                              leftSection={<IconTrash size={16} />}
+                              onClick={handleDeleteDeck}
+                              color="red"
+                              styles={{
+                                item: {
+                                  color: '#EF4444',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  },
+                                },
+                              }}
+                            >
+                              Удалить колоду
+                            </Menu.Item>
+                          </>
+                        )}
+                      </Menu.Dropdown>
+                    </Menu>
                   </>
                 )}
                 
@@ -945,7 +1086,7 @@ function App() {
                     },
                   }}
                 >
-                  Logout
+                  Выход
                 </Button>
               </Group>
             </Group>
@@ -1060,7 +1201,7 @@ function App() {
         onClose={() => setCreateModalOpened(false)}
         title={
           <Text fw={600} c="#FFFFFF">
-            Create New Course
+            Создать новый курс
           </Text>
         }
         styles={{
