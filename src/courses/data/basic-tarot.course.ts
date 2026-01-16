@@ -8,7 +8,7 @@ export const basicTarotCourse: Partial<Course> = {
   "isPublished": true,
   "translations": {
     "ru": {
-      "title": "Базовый курс Таро GAY",
+      "title": "Базовый курс Таро",
       "description": "Изучите основы Таро с нуля: структура колоды, чтение символов, Старшие Арканы, база Младших Арканов и простые расклады.",
       "chapters": [
         {

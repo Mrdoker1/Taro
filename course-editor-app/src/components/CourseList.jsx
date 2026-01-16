@@ -81,7 +81,7 @@ export function CourseList({ courses, selectedCourse, onSelectCourse, onCreateCo
             },
           }}
         >
-          New Course
+          Новый курс
         </Button>
       </Box>
     </Box>

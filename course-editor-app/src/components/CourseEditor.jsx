@@ -144,16 +144,16 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
     return (
       <Stack gap="xl">
         <TextInput
-          label="Course Title"
+          label="Название курса"
           value={translation.title || ''}
           onChange={(e) => handleTranslationChange(lang, 'title', e.target.value)}
-          placeholder="Enter course title"
+          placeholder="Введите название курса"
         />
         <Textarea
-          label="Description"
+          label="Описание"
           value={translation.description || ''}
           onChange={(e) => handleTranslationChange(lang, 'description', e.target.value)}
-          placeholder="Enter course description"
+          placeholder="Введите описание курса"
           autosize
           minRows={3}
         />
@@ -235,8 +235,8 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
             </Box>
             <Text c="#71717A" size="sm">
               {translation.chapters?.length === 0 
-                ? 'Click to add your first chapter'
-                : 'Click to add a new chapter'}
+                ? 'Нажмите, чтобы добавить первую главу'
+                : 'Нажмите, чтобы добавить новую главу'}
             </Text>
           </UnstyledButton>
         </Box>
@@ -252,7 +252,7 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
           <Paper p="xl" mb="xl">
             <Group justify="space-between" mb="xl">
               <Title order={4} c="#FFFFFF" fw={600} tt="uppercase" style={{ letterSpacing: '0.5px', fontSize: '14px' }}>
-                General Information
+                Общая информация
               </Title>
             </Group>
             
@@ -269,17 +269,17 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
                 }}
               />
               <Select
-                label="Level"
+                label="Уровень"
                 value={courseData.level}
                 onChange={(value) => handleBasicChange('level', value)}
                 data={[
-                  { value: 'beginner', label: 'Beginner' },
-                  { value: 'intermediate', label: 'Intermediate' },
-                  { value: 'advanced', label: 'Advanced' },
+                  { value: 'beginner', label: 'Начинающий' },
+                  { value: 'intermediate', label: 'Средний' },
+                  { value: 'advanced', label: 'Продвинутый' },
                 ]}
               />
               <NumberInput
-                label="Price ($)"
+                label="Цена ($)"
                 value={courseData.price}
                 onChange={(value) => handleBasicChange('price', value)}
                 min={0}
@@ -288,7 +288,7 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
 
             <Group grow mb="lg" align="flex-start">
               <ImagePreviewInput
-                label="Cover Image URL"
+                label="URL обложки"
                 value={courseData.coverImageUrl || ''}
                 onChange={(e) => handleBasicChange('coverImageUrl', e.target.value)}
                 placeholder="https://..."
@@ -302,12 +302,12 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
                   mb="sm"
                   style={{ letterSpacing: '0.5px' }}
                 >
-                  Published
+                  Опубликован
                 </Text>
                 <Switch
                   checked={courseData.isPublished}
                   onChange={(e) => handleBasicChange('isPublished', e.currentTarget.checked)}
-                  label={courseData.isPublished ? 'Yes' : 'No'}
+                  label={courseData.isPublished ? 'Да' : 'Нет'}
                   styles={{
                     label: {
                       color: '#FFFFFF',
@@ -325,14 +325,14 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
             <Group mb="xl" align="center">
               <IconBook size={20} color="#8B5CF6" />
               <Title order={4} c="#FFFFFF" fw={600} tt="uppercase" style={{ letterSpacing: '0.5px', fontSize: '14px' }}>
-                Curriculum
+                Учебная программа
               </Title>
             </Group>
 
             <Tabs value={activeTab} onChange={setActiveTab} variant="default">
               <Tabs.List mb="xl">
-                <Tabs.Tab value="ru">🇷🇺 Russian</Tabs.Tab>
-                <Tabs.Tab value="en">🇬🇧 English</Tabs.Tab>
+                <Tabs.Tab value="ru">🇷🇺 Русский</Tabs.Tab>
+                <Tabs.Tab value="en">🇬🇧 Английский</Tabs.Tab>
               </Tabs.List>
 
               <Tabs.Panel value="ru">

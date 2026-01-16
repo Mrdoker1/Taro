@@ -162,7 +162,7 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
                 },
               }}
             >
-              Pages ({(chapter.pages || []).length})
+              Страницы ({(chapter.pages || []).length})
             </Button>
             
             <Menu shadow="md" width={200}>
@@ -236,11 +236,11 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
       </Group>
 
       <TextInput
-        label="Chapter Title"
+        label="Название главы"
         value={chapter.title || ''}
         onChange={(e) => handleChapterChange('title', e.target.value)}
         mb="lg"
-        placeholder="Enter chapter title"
+        placeholder="Введите название главы"
       />
 
       <Collapse in={expanded}>
@@ -308,7 +308,7 @@ export function ChapterEditor({ id, chapter, chapterIndex, onChange, onRemove })
           >
             <IconPlus size={16} color="#71717A" />
             <Text c="#71717A" size="sm">
-              Add New Page
+              Добавить страницу
             </Text>
           </UnstyledButton>
         </Box>
