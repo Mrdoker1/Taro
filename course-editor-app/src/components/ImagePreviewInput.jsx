@@ -1,20 +1,78 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { TextInput, ActionIcon, Modal, Image, Text, Box, Group, Stack, Alert } from '@mantine/core';
 import { IconEye, IconAlertTriangle } from '@tabler/icons-react';
+
+// Глобальный кэш для размеров изображений
+const imageSizeCache = new Map();
+// Очередь запросов
+let fetchQueue = [];
+let isProcessingQueue = false;
+
+const processFetchQueue = async () => {
+  if (isProcessingQueue || fetchQueue.length === 0) return;
+  
+  isProcessingQueue = true;
+  
+  while (fetchQueue.length > 0) {
+    const item = fetchQueue.shift();
+    if (!item) continue;
+    
+    try {
+      const response = await fetch(item.url, { method: 'HEAD' }); // Используем HEAD вместо GET
+      const contentLength = response.headers.get('content-length');
+      if (contentLength) {
+        const sizeInBytes = parseInt(contentLength, 10);
+        imageSizeCache.set(item.url, sizeInBytes);
+        item.resolve(sizeInBytes);
+      } else {
+        item.resolve(null);
+      }
+    } catch (error) {
+      item.resolve(null);
+    }
+    
+    // Небольшая задержка между запросами
+    await new Promise(resolve => setTimeout(resolve, 100));
+  }
+  
+  isProcessingQueue = false;
+};
+
+const fetchImageSize = (url) => {
+  // Проверяем кэш
+  if (imageSizeCache.has(url)) {
+    return Promise.resolve(imageSizeCache.get(url));
+  }
+  
+  // Добавляем в очередь
+  return new Promise((resolve) => {
+    fetchQueue.push({ url, resolve });
+    processFetchQueue();
+  });
+};
 
 export function ImagePreviewInput({ label, value, onChange, placeholder, maxSizeKB, onSizeChange, ...props }) {
   const [previewOpened, setPreviewOpened] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
   const [imageSize, setImageSize] = useState(null);
   const [imageError, setImageError] = useState(false);
+  const [isLoadingSize, setIsLoadingSize] = useState(false);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     if (!value) {
       setImageDimensions(null);
       setImageSize(null);
       setImageError(false);
+      setIsLoadingSize(false);
       return;
     }
+
+    // Отменяем предыдущий запрос
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     const img = new window.Image();
     img.onload = () => {
@@ -28,26 +86,22 @@ export function ImagePreviewInput({ label, value, onChange, placeholder, maxSize
     };
     img.src = value;
 
-    // Получаем размер файла
-    fetch(value)
-      .then(response => {
-        const contentLength = response.headers.get('content-length');
-        if (contentLength) {
-          const sizeInBytes = parseInt(contentLength, 10);
-          setImageSize(sizeInBytes);
-          if (onSizeChange) onSizeChange(sizeInBytes);
-        } else {
-          // Если content-length недоступен, загружаем blob
-          return response.blob().then(blob => {
-            setImageSize(blob.size);
-            if (onSizeChange) onSizeChange(blob.size);
-          });
+    // Получаем размер файла через очередь
+    setIsLoadingSize(true);
+    fetchImageSize(value)
+      .then(size => {
+        if (!abortControllerRef.current?.signal.aborted) {
+          setImageSize(size);
+          setIsLoadingSize(false);
+          if (onSizeChange) onSizeChange(size);
         }
-      })
-      .catch(() => {
-        setImageSize(null);
-        if (onSizeChange) onSizeChange(null);
       });
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [value, onSizeChange]);
 
   const formatFileSize = (bytes) => {
