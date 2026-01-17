@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Paper, Select, Textarea, TextInput, Button, Group, Box, Modal } from '@mantine/core';
 import { IconEye, IconTrash } from '@tabler/icons-react';
 import { marked } from 'marked';
+import { ImagePreviewInput } from './ImagePreviewInput';
 
 export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
   const [previewOpened, setPreviewOpened] = useState(false);
@@ -109,10 +110,11 @@ export function BlockEditor({ block, blockIndex, onChange, onRemove }) {
 
       {block.type === 'image' && (
         <>
-          <TextInput
+          <ImagePreviewInput
             label="URL изображения"
             value={block.url || ''}
             onChange={(e) => handleChange('url', e.target.value)}
+            placeholder="https://..."
             mb="sm"
           />
           <TextInput

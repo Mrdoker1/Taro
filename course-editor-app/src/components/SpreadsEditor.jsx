@@ -148,7 +148,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 max={78}
               />
               <ImagePreviewInput
-                label="Image URL"
+                label="URL изображения"
                 value={localData.imageURL || ''}
                 onChange={(e) => handleChange({ ...localData, imageURL: e.target.value })}
                 placeholder="https://..."
@@ -167,7 +167,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
 
             <Group grow>
               <Switch
-                label="Доступен"
+                label="Опубликован"
                 checked={localData.available}
                 onChange={(e) => handleChange({ ...localData, available: e.currentTarget.checked })}
               />

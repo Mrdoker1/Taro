@@ -452,6 +452,37 @@ function App() {
     });
   };
 
+  const handleImportSpreadJSON = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          try {
+            const importedSpread = JSON.parse(event.target.result);
+            setSpreadData(importedSpread);
+            notifications.show({
+              title: 'Успех',
+              message: 'Расклад импортирован успешно',
+              color: 'green',
+            });
+          } catch (error) {
+            notifications.show({
+              title: 'Ошибка',
+              message: 'Ошибка при импорте расклада: ' + error.message,
+              color: 'red',
+            });
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
   const handleDeleteSpread = async () => {
     if (!spreadData || !confirm('Удалить этот расклад?')) return;
     
@@ -961,35 +992,77 @@ function App() {
                     >
                       Сохранить
                     </Button>
-                    <Button
-                      leftSection={<IconDownload size={16} />}
-                      onClick={handleDownloadSpreadJSON}
-                      variant="light"
-                      color="blue"
-                      size="sm"
-                    >
-                      Download JSON
-                    </Button>
-                    {selectedSpread !== 'new' && (
-                      <Button
-                        leftSection={<IconTrash size={16} />}
-                        onClick={handleDeleteSpread}
-                        variant="subtle"
-                        color="gray"
-                        size="sm"
-                        styles={{
-                          root: {
-                            color: '#EF4444',
-                            '&:hover': {
-                              backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                              color: '#EF4444',
+                    
+                    <Menu shadow="md" width={200}>
+                      <Menu.Target>
+                        <ActionIcon
+                          variant="subtle"
+                          color="gray"
+                          size="lg"
+                          styles={{
+                            root: {
+                              color: '#A1A1AA',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
                             },
-                          },
-                        }}
-                      >
-                        Удалить
-                      </Button>
-                    )}
+                          }}
+                        >
+                          <IconDots size={18} />
+                        </ActionIcon>
+                      </Menu.Target>
+
+                      <Menu.Dropdown style={{ backgroundColor: '#18181B', border: '1px solid #27272A' }}>
+                        <Menu.Item
+                          leftSection={<IconDownload size={16} />}
+                          onClick={handleDownloadSpreadJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Экспорт расклада
+                        </Menu.Item>
+                        <Menu.Item
+                          leftSection={<IconUpload size={16} />}
+                          onClick={handleImportSpreadJSON}
+                          styles={{
+                            item: {
+                              color: '#FFFFFF',
+                              '&:hover': {
+                                backgroundColor: '#27272A',
+                              },
+                            },
+                          }}
+                        >
+                          Импорт расклада
+                        </Menu.Item>
+                        {selectedSpread !== 'new' && (
+                          <>
+                            <Menu.Divider style={{ borderColor: '#27272A' }} />
+                            <Menu.Item
+                              leftSection={<IconTrash size={16} />}
+                              onClick={handleDeleteSpread}
+                              color="red"
+                              styles={{
+                                item: {
+                                  color: '#EF4444',
+                                  '&:hover': {
+                                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                                  },
+                                },
+                              }}
+                            >
+                              Удалить расклад
+                            </Menu.Item>
+                          </>
+                        )}
+                      </Menu.Dropdown>
+                    </Menu>
                   </>
                 )}
                 

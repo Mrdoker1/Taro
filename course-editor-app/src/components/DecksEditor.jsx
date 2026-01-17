@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, ScrollArea, Button, ActionIcon, Group, Accordion } from '@mantine/core';
-import { IconPlus, IconTrash } from '@tabler/icons-react';
+import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, ScrollArea, Button, ActionIcon, Group, Accordion, NumberInput, Tooltip } from '@mantine/core';
+import { IconPlus, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { decksApi } from '../api/client';
 import { ImagePreviewInput } from './ImagePreviewInput';
@@ -8,6 +8,8 @@ import { ImagePreviewInput } from './ImagePreviewInput';
 export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
   const [localData, setLocalData] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [maxImageSize, setMaxImageSize] = useState(500); // KB
+  const [cardImageSizes, setCardImageSizes] = useState({}); // Хранение размеров изображений карт
 
   useEffect(() => {
     if (selectedDeck && selectedDeck !== 'new') {
@@ -121,16 +123,38 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
             />
 
             <ImagePreviewInput
-              label="Cover Image URL"
+              label="URL обложки"
               value={localData.coverImageUrl || ''}
               onChange={(e) => handleChange({ ...localData, coverImageUrl: e.target.value })}
               placeholder="https://..."
             />
 
             <Switch
-              label="Доступна"
+              label="Опубликована"
               checked={localData.available}
               onChange={(e) => handleChange({ ...localData, available: e.currentTarget.checked })}
+            />
+
+            <NumberInput
+              label="Максимальный размер изображения карты (KB)"
+              description="Показывать предупреждение, если размер изображения карты превышает это значение"
+              value={maxImageSize}
+              onChange={(value) => setMaxImageSize(value || 500)}
+              min={50}
+              max={5000}
+              step={50}
+              suffix=" KB"
+              styles={{
+                input: {
+                  backgroundColor: '#18181B',
+                  borderColor: '#27272A',
+                  color: '#FFFFFF',
+                },
+                description: {
+                  color: '#71717A',
+                  fontSize: '12px',
+                },
+              }}
             />
           </Stack>
         </Paper>
@@ -286,9 +310,28 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                     </ActionIcon>
                   }
                 >
-                  <Text fw={500}>
-                    {card.translations?.ru?.name || card.translations?.en?.name || `Карта ${cardIndex + 1}`}
-                  </Text>
+                  <Group gap="xs" style={{ flex: 1 }}>
+                    <Text fw={500}>
+                      {card.translations?.ru?.name || card.translations?.en?.name || `Карта ${cardIndex + 1}`}
+                    </Text>
+                    {cardImageSizes[card.id] && cardImageSizes[card.id] > maxImageSize * 1024 && (
+                      <Tooltip 
+                        label={`Размер изображения превышает ${maxImageSize} KB`}
+                        position="top"
+                        withArrow
+                        styles={{
+                          tooltip: {
+                            backgroundColor: '#EF4444',
+                            color: '#FFFFFF',
+                          },
+                        }}
+                      >
+                        <Box style={{ display: 'flex', alignItems: 'center' }}>
+                          <IconAlertTriangle size={18} color="#EF4444" />
+                        </Box>
+                      </Tooltip>
+                    )}
+                  </Group>
                 </Accordion.Control>
                 <Accordion.Panel>
                   <Stack gap="md">
@@ -304,7 +347,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                     />
 
                     <ImagePreviewInput
-                      label="Image URL"
+                      label="URL изображения"
                       value={card.imageUrl || ''}
                       onChange={(e) => {
                         const newCards = [...localData.cards];
@@ -312,6 +355,13 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                         handleChange({ ...localData, cards: newCards });
                       }}
                       placeholder="https://..."
+                      maxSizeKB={maxImageSize}
+                      onSizeChange={(size) => {
+                        setCardImageSizes(prev => ({
+                          ...prev,
+                          [card.id]: size
+                        }));
+                      }}
                     />
 
                     <Tabs defaultValue="ru">
