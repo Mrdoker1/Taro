@@ -310,8 +310,19 @@ export class DecksService {
    */
   async updateDeck(deckId: string, deckData: any): Promise<DeckDocument> {
     try {
+      // Удаляем служебные поля MongoDB перед обновлением
+      const { _id, __v, createdAt, updatedAt, ...updateData } = deckData;
+      
+      // Также удаляем _id из карт, если они есть
+      if (updateData.cards && Array.isArray(updateData.cards)) {
+        updateData.cards = updateData.cards.map(card => {
+          const { _id: cardId, ...cardData } = card;
+          return cardData;
+        });
+      }
+      
       const deck = await this.deckModel
-        .findOneAndUpdate({ key: deckId }, deckData, { new: true })
+        .findOneAndUpdate({ key: deckId }, updateData, { new: true })
         .exec();
 
       if (!deck) {
