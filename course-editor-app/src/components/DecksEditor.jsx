@@ -3,15 +3,29 @@ import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, Scro
 import { IconPlus, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { decksApi } from '../api/client';
-import { ImagePreviewInput } from './ImagePreviewInput';
+import { ImagePreviewInput, clearImageFetchQueue } from './ImagePreviewInput';
+
+const MAX_IMAGE_SIZE_KEY = 'deck-max-image-size';
 
 export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
   const [localData, setLocalData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [maxImageSize, setMaxImageSize] = useState(500); // KB
+  const [maxImageSize, setMaxImageSize] = useState(() => {
+    // Загружаем из localStorage при инициализации
+    try {
+      const stored = localStorage.getItem(MAX_IMAGE_SIZE_KEY);
+      return stored ? parseInt(stored, 10) : 500;
+    } catch {
+      return 500;
+    }
+  }); // KB
   const [cardImageSizes, setCardImageSizes] = useState({}); // Хранение размеров изображений карт
 
   useEffect(() => {
+    // Очищаем очередь запросов и размеры карт при смене колоды
+    clearImageFetchQueue();
+    setCardImageSizes({});
+    
     if (selectedDeck && selectedDeck !== 'new') {
       loadDeck(selectedDeck);
     } else if (selectedDeck === 'new') {
@@ -31,6 +45,11 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
       setLocalData(null);
       onDeckChange(null);
     }
+    
+    // Очистка при размонтировании компонента
+    return () => {
+      clearImageFetchQueue();
+    };
   }, [selectedDeck]);
 
   useEffect(() => {
@@ -139,7 +158,16 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
               label="Максимальный размер изображения карты (KB)"
               description="Показывать предупреждение, если размер изображения карты превышает это значение"
               value={maxImageSize}
-              onChange={(value) => setMaxImageSize(value || 500)}
+              onChange={(value) => {
+                const newValue = value || 500;
+                setMaxImageSize(newValue);
+                // Сохраняем в localStorage
+                try {
+                  localStorage.setItem(MAX_IMAGE_SIZE_KEY, newValue.toString());
+                } catch (error) {
+                  console.error('Error saving max image size:', error);
+                }
+              }}
               min={50}
               max={5000}
               step={50}
