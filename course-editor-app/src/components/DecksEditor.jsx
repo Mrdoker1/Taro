@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, ScrollArea, Button, ActionIcon, Group, Accordion, NumberInput, Tooltip } from '@mantine/core';
 import { IconPlus, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
@@ -20,6 +20,15 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
     }
   }); // KB
   const [cardImageSizes, setCardImageSizes] = useState({}); // Хранение размеров изображений карт
+  
+  // Мемоизируем проверку предупреждений
+  const cardWarnings = useMemo(() => {
+    const warnings = {};
+    Object.keys(cardImageSizes).forEach(cardId => {
+      warnings[cardId] = cardImageSizes[cardId] > maxImageSize * 1024;
+    });
+    return warnings;
+  }, [cardImageSizes, maxImageSize]);
 
   useEffect(() => {
     // Очищаем очередь запросов и размеры карт при смене колоды
@@ -161,9 +170,11 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
               onChange={(value) => {
                 const newValue = value || 500;
                 setMaxImageSize(newValue);
-                // Сохраняем в localStorage
+              }}
+              onBlur={() => {
+                // Сохраняем в localStorage только при потере фокуса
                 try {
-                  localStorage.setItem(MAX_IMAGE_SIZE_KEY, newValue.toString());
+                  localStorage.setItem(MAX_IMAGE_SIZE_KEY, maxImageSize.toString());
                 } catch (error) {
                   console.error('Error saving max image size:', error);
                 }
@@ -342,7 +353,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                     <Text fw={500}>
                       {card.translations?.ru?.name || card.translations?.en?.name || `Карта ${cardIndex + 1}`}
                     </Text>
-                    {cardImageSizes[card.id] && cardImageSizes[card.id] > maxImageSize * 1024 && (
+                    {cardWarnings[card.id] && (
                       <Tooltip 
                         label={`Размер изображения превышает ${maxImageSize} KB`}
                         position="top"
