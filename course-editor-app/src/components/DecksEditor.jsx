@@ -128,7 +128,7 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
             />
 
             <Switch
-              label="Доступна"
+              label="Опубликована"
               checked={localData.available}
               onChange={(e) => handleChange({ ...localData, available: e.currentTarget.checked })}
             />

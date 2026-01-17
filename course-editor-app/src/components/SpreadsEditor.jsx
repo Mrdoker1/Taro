@@ -167,7 +167,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
 
             <Group grow>
               <Switch
-                label="Доступен"
+                label="Опубликован"
                 checked={localData.available}
                 onChange={(e) => handleChange({ ...localData, available: e.currentTarget.checked })}
               />
