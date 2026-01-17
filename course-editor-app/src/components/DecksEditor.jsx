@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
-import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, ScrollArea, Button, ActionIcon, Group, Accordion, NumberInput, Tooltip } from '@mantine/core';
-import { IconPlus, IconTrash, IconAlertTriangle } from '@tabler/icons-react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Box, Title, Text, Paper, Stack, TextInput, Textarea, Switch, Tabs, ScrollArea, Button, ActionIcon, Group, Accordion, NumberInput, Tooltip, Progress, LoadingOverlay, Modal, Image } from '@mantine/core';
+import { IconPlus, IconTrash, IconAlertTriangle, IconRefresh, IconEye } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { decksApi } from '../api/client';
 import { ImagePreviewInput, clearImageFetchQueue } from './ImagePreviewInput';
@@ -19,7 +19,69 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
       return 500;
     }
   }); // KB
-  const [cardImageSizes, setCardImageSizes] = useState({}); // Хранение размеров изображений карт
+  const [cardImageSizes, setCardImageSizes] = useState(() => {
+    // Загружаем размеры из localStorage при инициализации
+    try {
+      const stored = localStorage.getItem(`deck-card-sizes-${selectedDeck}`);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [isCheckingSizes, setIsCheckingSizes] = useState(false);
+  const [checkProgress, setCheckProgress] = useState({ current: 0, total: 0 });
+  const [previewImage, setPreviewImage] = useState(null);
+  
+  // Функция проверки размеров всех карт
+  const checkAllCardSizes = async () => {
+    if (!localData?.cards || localData.cards.length === 0) return;
+    
+    setIsCheckingSizes(true);
+    setCheckProgress({ current: 0, total: localData.cards.length });
+    
+    const sizes = {};
+    
+    for (let i = 0; i < localData.cards.length; i++) {
+      const card = localData.cards[i];
+      if (!card.imageUrl) {
+        setCheckProgress({ current: i + 1, total: localData.cards.length });
+        continue;
+      }
+      
+      try {
+        const response = await fetch(card.imageUrl, { method: 'HEAD' });
+        const contentLength = response.headers.get('content-length');
+        if (contentLength) {
+          sizes[card.id] = parseInt(contentLength, 10);
+        }
+      } catch (error) {
+        console.error(`Error checking size for card ${card.id}:`, error);
+      }
+      
+      setCheckProgress({ current: i + 1, total: localData.cards.length });
+      
+      // Небольшая задержка между запросами
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    setCardImageSizes(sizes);
+    
+    // Сохраняем в localStorage
+    try {
+      localStorage.setItem(`deck-card-sizes-${selectedDeck}`, JSON.stringify(sizes));
+    } catch (error) {
+      console.error('Error saving sizes to localStorage:', error);
+    }
+    
+    setIsCheckingSizes(false);
+    setCheckProgress({ current: 0, total: 0 });
+    
+    notifications.show({
+      title: 'Готово',
+      message: `Проверено ${localData.cards.length} карт`,
+      color: 'green',
+    });
+  };
   
   // Мемоизируем проверку предупреждений
   const cardWarnings = useMemo(() => {
@@ -31,9 +93,16 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
   }, [cardImageSizes, maxImageSize]);
 
   useEffect(() => {
-    // Очищаем очередь запросов и размеры карт при смене колоды
+    // Очищаем очередь запросов при смене колоды
     clearImageFetchQueue();
-    setCardImageSizes({});
+    
+    // Загружаем размеры карт из localStorage для новой колоды
+    try {
+      const stored = localStorage.getItem(`deck-card-sizes-${selectedDeck}`);
+      setCardImageSizes(stored ? JSON.parse(stored) : {});
+    } catch {
+      setCardImageSizes({});
+    }
     
     if (selectedDeck && selectedDeck !== 'new') {
       loadDeck(selectedDeck);
@@ -125,8 +194,43 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
   }
 
   return (
-    <ScrollArea h="calc(100vh - 64px)">
-      <Box p="xl">
+    <Box style={{ position: 'relative' }}>
+      {/* Прогресс-бар поверх всего */}
+      {isCheckingSizes && (
+        <Box
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1001,
+            backgroundColor: '#18181B',
+            borderBottom: '1px solid #27272A',
+            padding: '16px',
+          }}
+        >
+          <Group gap="md" align="center">
+            <Text size="sm" c="#A1A1AA" style={{ minWidth: '150px' }}>
+              Проверка размеров: {checkProgress.current} / {checkProgress.total}
+            </Text>
+            <Progress 
+              value={(checkProgress.current / checkProgress.total) * 100} 
+              color="violet"
+              size="md"
+              animated
+              style={{ flex: 1 }}
+            />
+          </Group>
+        </Box>
+      )}
+      
+      <ScrollArea h="calc(100vh - 64px)">
+        <Box p="xl" style={{ position: 'relative' }}>
+          <LoadingOverlay 
+            visible={isCheckingSizes} 
+            overlayProps={{ blur: 2 }}
+            loaderProps={{ display: 'none' }}
+          />
         <Paper
           p="xl"
           mb="xl"
@@ -163,38 +267,57 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
               onChange={(e) => handleChange({ ...localData, available: e.currentTarget.checked })}
             />
 
-            <NumberInput
-              label="Максимальный размер изображения карты (KB)"
-              description="Показывать предупреждение, если размер изображения карты превышает это значение"
-              value={maxImageSize}
-              onChange={(value) => {
-                const newValue = value || 500;
-                setMaxImageSize(newValue);
-              }}
-              onBlur={() => {
-                // Сохраняем в localStorage только при потере фокуса
-                try {
-                  localStorage.setItem(MAX_IMAGE_SIZE_KEY, maxImageSize.toString());
-                } catch (error) {
-                  console.error('Error saving max image size:', error);
-                }
-              }}
-              min={50}
-              max={5000}
-              step={50}
-              suffix=" KB"
-              styles={{
-                input: {
-                  backgroundColor: '#18181B',
-                  borderColor: '#27272A',
-                  color: '#FFFFFF',
-                },
-                description: {
-                  color: '#71717A',
-                  fontSize: '12px',
-                },
-              }}
-            />
+            <Box>
+              <Group gap="xs" align="flex-end">
+                <NumberInput
+                  label="Максимальный размер изображения карты (KB)"
+                  description="Показывать предупреждение, если размер изображения карты превышает это значение"
+                  value={maxImageSize}
+                  onChange={(value) => {
+                    const newValue = value || 500;
+                    setMaxImageSize(newValue);
+                  }}
+                  onBlur={() => {
+                    // Сохраняем в localStorage только при потере фокуса
+                    try {
+                      localStorage.setItem(MAX_IMAGE_SIZE_KEY, maxImageSize.toString());
+                    } catch (error) {
+                      console.error('Error saving max image size:', error);
+                    }
+                  }}
+                  min={50}
+                  max={5000}
+                  step={50}
+                  suffix=" KB"
+                  style={{ flex: 1 }}
+                  styles={{
+                    input: {
+                      backgroundColor: '#18181B',
+                      borderColor: '#27272A',
+                      color: '#FFFFFF',
+                    },
+                    description: {
+                      color: '#71717A',
+                      fontSize: '12px',
+                    },
+                  }}
+                />
+                <Button
+                  leftSection={<IconRefresh size={16} />}
+                  onClick={checkAllCardSizes}
+                  loading={isCheckingSizes}
+                  variant="light"
+                  color="violet"
+                  styles={{
+                    root: {
+                      flexShrink: 0,
+                    },
+                  }}
+                >
+                  Проверить размеры
+                </Button>
+              </Group>
+            </Box>
           </Stack>
         </Paper>
 
@@ -331,9 +454,8 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
               <Accordion.Item key={card.id || cardIndex} value={`card-${cardIndex}`}>
                 <Accordion.Control
                   icon={
-                    <ActionIcon
-                      color="red"
-                      variant="subtle"
+                    <Box
+                      component="div"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (confirm('Удалить эту карту?')) {
@@ -344,9 +466,24 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                           });
                         }
                       }}
+                      style={{
+                        cursor: 'pointer',
+                        color: '#EF4444',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '4px',
+                        borderRadius: '4px',
+                        transition: 'background-color 0.2s',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                      }}
                     >
                       <IconTrash size={16} />
-                    </ActionIcon>
+                    </Box>
                   }
                 >
                   <Group gap="xs" style={{ flex: 1 }}>
@@ -385,23 +522,94 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
                       placeholder="the-fool"
                     />
 
-                    <ImagePreviewInput
-                      label="URL изображения"
-                      value={card.imageUrl || ''}
-                      onChange={(e) => {
-                        const newCards = [...localData.cards];
-                        newCards[cardIndex] = { ...card, imageUrl: e.target.value };
-                        handleChange({ ...localData, cards: newCards });
-                      }}
-                      placeholder="https://..."
-                      maxSizeKB={maxImageSize}
-                      onSizeChange={(size) => {
-                        setCardImageSizes(prev => ({
-                          ...prev,
-                          [card.id]: size
-                        }));
-                      }}
-                    />
+                    <Box>
+                      <TextInput
+                        label="URL изображения"
+                        value={card.imageUrl || ''}
+                        onChange={(e) => {
+                          const newCards = [...localData.cards];
+                          newCards[cardIndex] = { ...card, imageUrl: e.target.value };
+                          handleChange({ ...localData, cards: newCards });
+                        }}
+                        placeholder="https://..."
+                        rightSection={
+                          card.imageUrl && (
+                            <ActionIcon
+                              variant="subtle"
+                              color="violet"
+                              onClick={() => setPreviewImage(card.imageUrl)}
+                            >
+                              <IconEye size={18} />
+                            </ActionIcon>
+                          )
+                        }
+                      />
+                      
+                      {/* Превью и размер после проверки */}
+                      {cardImageSizes[card.id] && card.imageUrl && (
+                        <Box
+                          mt="md"
+                          p="md"
+                          style={{
+                            backgroundColor: '#18181B',
+                            border: '1px solid #27272A',
+                            borderRadius: '8px',
+                          }}
+                        >
+                          <Group gap="md" align="flex-start">
+                            <Box
+                              style={{
+                                width: '120px',
+                                height: '180px',
+                                borderRadius: '8px',
+                                overflow: 'hidden',
+                                backgroundColor: '#09090B',
+                                border: '1px solid #27272A',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <img
+                                src={card.imageUrl}
+                                alt={card.translations?.ru?.name || 'Card'}
+                                style={{
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: 'cover',
+                                }}
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            </Box>
+                            <Stack gap="xs" style={{ flex: 1 }}>
+                              <Text size="sm" fw={500} c="#A1A1AA">
+                                Информация об изображении
+                              </Text>
+                              <Group gap="xs">
+                                <Text size="sm" c="#71717A">
+                                  Размер:
+                                </Text>
+                                <Text
+                                  size="sm"
+                                  fw={500}
+                                  c={cardImageSizes[card.id] > maxImageSize * 1024 ? '#EF4444' : '#10B981'}
+                                >
+                                  {(cardImageSizes[card.id] / 1024).toFixed(2)} KB
+                                </Text>
+                              </Group>
+                              {cardImageSizes[card.id] > maxImageSize * 1024 && (
+                                <Group gap="xs" align="flex-start">
+                                  <IconAlertTriangle size={16} color="#EF4444" style={{ marginTop: '2px' }} />
+                                  <Text size="xs" c="#EF4444">
+                                    Превышает лимит {maxImageSize} KB
+                                  </Text>
+                                </Group>
+                              )}
+                            </Stack>
+                          </Group>
+                        </Box>
+                      )}
+                    </Box>
 
                     <Tabs defaultValue="ru">
                       <Tabs.List>
@@ -573,5 +781,51 @@ export function DecksEditor({ selectedDeck, deckData, onDeckChange }) {
         </Paper>
       </Box>
     </ScrollArea>
+    
+    {/* Модальное окно для превью изображения */}
+    <Modal
+      opened={!!previewImage}
+      onClose={() => setPreviewImage(null)}
+      title="Превью изображения"
+      size="auto"
+      centered
+      styles={{
+        title: {
+          color: '#8B5CF6',
+          fontWeight: 600,
+        },
+        content: {
+          backgroundColor: '#111114',
+        },
+        header: {
+          backgroundColor: '#111114',
+          borderBottom: '1px solid #27272A',
+        },
+        body: {
+          padding: '20px',
+        },
+      }}
+    >
+      <Box
+        style={{
+          maxWidth: '90vw',
+          maxHeight: '80vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <Image
+          src={previewImage}
+          alt="Preview"
+          fit="contain"
+          style={{
+            maxWidth: '100%',
+            maxHeight: '80vh',
+          }}
+        />
+      </Box>
+    </Modal>
+    </Box>
   );
 }

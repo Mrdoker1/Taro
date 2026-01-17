@@ -227,10 +227,13 @@ export class SpreadsService {
    */
   async updateSpread(spreadId: string, spreadData: Partial<Spread>): Promise<Spread> {
     try {
+      // Удаляем служебные поля MongoDB перед обновлением
+      const { _id, __v, createdAt, updatedAt, ...updateData } = spreadData as any;
+      
       const spread = await this.spreadModel
         .findOneAndUpdate(
           { key: spreadId },
-          { $set: spreadData },
+          { $set: updateData },
           { new: true }
         )
         .exec();

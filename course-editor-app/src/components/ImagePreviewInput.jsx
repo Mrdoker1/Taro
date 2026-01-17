@@ -81,7 +81,7 @@ const processFetchQueue = async () => {
     }
     
     // Небольшая задержка между запросами
-    await new Promise(resolve => setTimeout(resolve, 50)); // Уменьшил с 100 до 50
+    await new Promise(resolve => setTimeout(resolve, 150)); // Увеличил для стабильности
   }
   
   isProcessingQueue = false;
@@ -138,16 +138,51 @@ export const clearImageCache = () => {
   }
 };
 
-export function ImagePreviewInput({ label, value, onChange, placeholder, maxSizeKB, onSizeChange, ...props }) {
+export function ImagePreviewInput({ label, value, onChange, placeholder, maxSizeKB, onSizeChange, lazy = false, disabled = false, ...props }) {
   const [previewOpened, setPreviewOpened] = useState(false);
   const [imageDimensions, setImageDimensions] = useState(null);
   const [imageSize, setImageSize] = useState(null);
   const [imageError, setImageError] = useState(false);
   const [isLoadingSize, setIsLoadingSize] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(!lazy);
   const abortControllerRef = useRef(null);
+  const elementRef = useRef(null);
+
+  // Сброс shouldLoad при изменении lazy
+  useEffect(() => {
+    if (!lazy) {
+      setShouldLoad(true);
+    } else {
+      setShouldLoad(false);
+    }
+  }, [lazy]);
+
+  // Intersection Observer для ленивой загрузки
+  useEffect(() => {
+    if (!lazy || shouldLoad || disabled) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setShouldLoad(true);
+        }
+      },
+      { rootMargin: '100px' } // Начинаем загрузку за 100px до появления
+    );
+
+    if (elementRef.current) {
+      observer.observe(elementRef.current);
+    }
+
+    return () => {
+      if (elementRef.current) {
+        observer.unobserve(elementRef.current);
+      }
+    };
+  }, [lazy, shouldLoad, disabled]);
 
   useEffect(() => {
-    if (!value) {
+    if (!value || !shouldLoad || disabled) {
       setImageDimensions(null);
       setImageSize(null);
       setImageError(false);
@@ -189,7 +224,7 @@ export function ImagePreviewInput({ label, value, onChange, placeholder, maxSize
         abortControllerRef.current.abort();
       }
     };
-  }, [value, onSizeChange]);
+  }, [value, onSizeChange, shouldLoad, disabled]);
 
   const formatFileSize = (bytes) => {
     if (!bytes) return null;
@@ -200,7 +235,7 @@ export function ImagePreviewInput({ label, value, onChange, placeholder, maxSize
 
   return (
     <>
-      <Stack gap="xs">
+      <Stack gap="xs" ref={elementRef}>
         <TextInput
           label={label}
           value={value}
