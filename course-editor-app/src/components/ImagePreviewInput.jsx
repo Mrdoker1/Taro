@@ -3,39 +3,89 @@ import { TextInput, ActionIcon, Modal, Image, Text, Box, Group, Stack, Alert } f
 import { IconEye, IconAlertTriangle } from '@tabler/icons-react';
 
 // Глобальный кэш для размеров изображений
-const imageSizeCache = new Map();
+const CACHE_KEY = 'image-size-cache';
+const CACHE_VERSION = 'v1';
+
+// Загружаем кэш из localStorage
+const loadCacheFromStorage = () => {
+  try {
+    const stored = localStorage.getItem(CACHE_KEY);
+    if (stored) {
+      const { version, data } = JSON.parse(stored);
+      if (version === CACHE_VERSION) {
+        return new Map(Object.entries(data));
+      }
+    }
+  } catch (error) {
+    console.error('Error loading cache from localStorage:', error);
+  }
+  return new Map();
+};
+
+// Сохраняем кэш в localStorage
+const saveCacheToStorage = (cache) => {
+  try {
+    const data = Object.fromEntries(cache);
+    localStorage.setItem(CACHE_KEY, JSON.stringify({
+      version: CACHE_VERSION,
+      data,
+      timestamp: Date.now()
+    }));
+  } catch (error) {
+    console.error('Error saving cache to localStorage:', error);
+  }
+};
+
+const imageSizeCache = loadCacheFromStorage();
 // Очередь запросов
 let fetchQueue = [];
 let isProcessingQueue = false;
+let currentAbortController = null;
 
 const processFetchQueue = async () => {
   if (isProcessingQueue || fetchQueue.length === 0) return;
   
   isProcessingQueue = true;
+  currentAbortController = new AbortController();
   
   while (fetchQueue.length > 0) {
     const item = fetchQueue.shift();
     if (!item) continue;
     
+    // Проверяем, не был ли запрос отменен
+    if (item.cancelled) {
+      item.resolve(null);
+      continue;
+    }
+    
     try {
-      const response = await fetch(item.url, { method: 'HEAD' }); // Используем HEAD вместо GET
+      const response = await fetch(item.url, { 
+        method: 'HEAD',
+        signal: currentAbortController.signal
+      });
       const contentLength = response.headers.get('content-length');
       if (contentLength) {
         const sizeInBytes = parseInt(contentLength, 10);
         imageSizeCache.set(item.url, sizeInBytes);
+        saveCacheToStorage(imageSizeCache); // Сохраняем в localStorage
         item.resolve(sizeInBytes);
       } else {
         item.resolve(null);
       }
     } catch (error) {
-      item.resolve(null);
+      if (error.name === 'AbortError') {
+        item.resolve(null);
+      } else {
+        item.resolve(null);
+      }
     }
     
     // Небольшая задержка между запросами
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise(resolve => setTimeout(resolve, 50)); // Уменьшил с 100 до 50
   }
   
   isProcessingQueue = false;
+  currentAbortController = null;
 };
 
 const fetchImageSize = (url) => {
@@ -46,9 +96,46 @@ const fetchImageSize = (url) => {
   
   // Добавляем в очередь
   return new Promise((resolve) => {
-    fetchQueue.push({ url, resolve });
+    const item = { url, resolve, cancelled: false };
+    fetchQueue.push(item);
     processFetchQueue();
+    
+    // Возвращаем функцию для отмены
+    return () => {
+      item.cancelled = true;
+    };
   });
+};
+
+// Функция для очистки очереди (вызывается при размонтировании)
+export const clearImageFetchQueue = () => {
+  fetchQueue.forEach(item => {
+    item.cancelled = true;
+    item.resolve(null);
+  });
+  fetchQueue = [];
+  
+  if (currentAbortController) {
+    currentAbortController.abort();
+  }
+};
+
+// Функция для принудительного обновления размера изображения (при изменении URL)
+export const invalidateImageCache = (url) => {
+  if (url) {
+    imageSizeCache.delete(url);
+    saveCacheToStorage(imageSizeCache);
+  }
+};
+
+// Функция для очистки всего кэша
+export const clearImageCache = () => {
+  imageSizeCache.clear();
+  try {
+    localStorage.removeItem(CACHE_KEY);
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+  }
 };
 
 export function ImagePreviewInput({ label, value, onChange, placeholder, maxSizeKB, onSizeChange, ...props }) {
