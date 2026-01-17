@@ -46,7 +46,7 @@ export class Deck {
   @Prop({ required: true, unique: true })
   key: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   coverImageUrl: string;
 
   @Prop({ default: true })
