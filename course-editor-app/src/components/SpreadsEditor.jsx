@@ -148,7 +148,7 @@ export function SpreadsEditor({ selectedSpread, spreadData, onSpreadChange }) {
                 max={78}
               />
               <ImagePreviewInput
-                label="Image URL"
+                label="URL изображения"
                 value={localData.imageURL || ''}
                 onChange={(e) => handleChange({ ...localData, imageURL: e.target.value })}
                 placeholder="https://..."
