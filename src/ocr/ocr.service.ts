@@ -1,7 +1,7 @@
 import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 // Константы моделей Qwen VL
 const QWEN_VL_MODELS = {

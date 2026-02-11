@@ -5,9 +5,9 @@ import { DailyHoroscopeResponseDto } from './schemas/daily-horoscope.schema';
 import { AiGenerationService } from '../ai-generation/ai-generation.service';
 import { PromptTemplatesService } from '../prompt-templates/prompt-templates.service';
 import { Horoscope } from './schemas/horoscope.schema';
-import * as dayjs from 'dayjs';
-import * as timezone from 'dayjs/plugin/timezone';
-import * as utc from 'dayjs/plugin/utc';
+import dayjs from 'dayjs';
+import timezone from 'dayjs/plugin/timezone';
+import utc from 'dayjs/plugin/utc';
 import { WeeklyHoroscopeResponseDto } from './schemas/weekly-horoscope.schema';
 import { MonthlyHoroscopeResponseDto } from './schemas/monthly-horoscope.schema';
 

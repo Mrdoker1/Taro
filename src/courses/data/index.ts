@@ -1,3 +1,5 @@
-export { advancedTarotCourse } from './advanced-tarot.course';
-export { basicTarotCourse } from './basic-tarot.course';
-export { vasaCourse } from './vasa.course';
+import * as basicTarotCourseJson from './basic-tarot.course.json';
+import * as advancedTarotCourseJson from './advanced-tarot.course.json';
+
+export const basicTarotCourse = basicTarotCourseJson;
+export const advancedTarotCourse = advancedTarotCourseJson;
