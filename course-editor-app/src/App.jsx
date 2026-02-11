@@ -256,12 +256,23 @@ function App() {
   const handleCreateCourse = async () => {
     if (!newCourseSlug) return;
 
+    // Валидация slug
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!slugRegex.test(newCourseSlug)) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Невалидный slug. Используйте только строчные буквы, цифры и дефисы (например, "basic-tarot")',
+        color: 'red',
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       await courseApi.createCourse(newCourseSlug);
       notifications.show({
-        title: 'Success',
-        message: 'Course created successfully!',
+        title: 'Успешно',
+        message: 'Курс создан успешно!',
         color: 'green',
       });
       setCreateModalOpened(false);
@@ -270,8 +281,8 @@ function App() {
       await loadCourse(newCourseSlug);
     } catch (error) {
       notifications.show({
-        title: 'Error',
-        message: 'Failed to create course',
+        title: 'Ошибка',
+        message: error.response?.data?.message || 'Не удалось создать курс',
         color: 'red',
       });
     } finally {
@@ -406,6 +417,17 @@ function App() {
   const handleSaveSpread = async () => {
     if (!spreadData) return;
     
+    // Валидация key
+    const keyRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (spreadData.key && !keyRegex.test(spreadData.key)) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Невалидный key. Используйте только строчные буквы, цифры и дефисы (например, "three-cards")',
+        color: 'red',
+      });
+      return;
+    }
+    
     setSaving(true);
     try {
       if (selectedSpread === 'new') {
@@ -423,7 +445,7 @@ function App() {
     } catch (error) {
       notifications.show({
         title: 'Ошибка',
-        message: 'Не удалось сохранить расклад',
+        message: error.response?.data?.message || 'Не удалось сохранить расклад',
         color: 'red',
       });
     } finally {
@@ -579,6 +601,17 @@ function App() {
   const handleSaveDeck = async () => {
     if (!deckData) return;
     
+    // Валидация key
+    const keyRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (deckData.key && !keyRegex.test(deckData.key)) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Невалидный key. Используйте только строчные буквы, цифры и дефисы (например, "rider-waite")',
+        color: 'red',
+      });
+      return;
+    }
+    
     setSaving(true);
     try {
       if (selectedDeck === 'new') {
@@ -596,7 +629,7 @@ function App() {
     } catch (error) {
       notifications.show({
         title: 'Ошибка',
-        message: 'Не удалось сохранить колоду',
+        message: error.response?.data?.message || 'Не удалось сохранить колоду',
         color: 'red',
       });
     } finally {
