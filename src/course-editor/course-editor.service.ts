@@ -82,15 +82,27 @@ export class CourseEditorService {
    */
   async saveCourseData(courseSlug: string, data: any): Promise<void> {
     try {
-      // 1. Сохраняем в базу данных
+      // 1. Сохраняем в базу данных (обязательно)
       await this.syncCourseToDatabase(courseSlug, data);
+      console.log(`✅ Course "${courseSlug}" saved to database`);
       
-      // 2. Сохраняем в JSON файл (для backup и version control)
-      const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
-      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
-      
-      console.log(`✅ Course "${courseSlug}" saved to database and JSON file`);
+      // 2. Пытаемся сохранить в JSON файл (опционально, для backup)
+      try {
+        // Проверяем существование папки
+        if (!fs.existsSync(this.coursesDataPath)) {
+          console.warn(`⚠️ Data path does not exist: ${this.coursesDataPath}`);
+          fs.mkdirSync(this.coursesDataPath, { recursive: true });
+        }
+        
+        const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
+        fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+        console.log(`✅ Course "${courseSlug}" saved to JSON file`);
+      } catch (fileError) {
+        // Если не удалось сохранить в файл - не критично, главное что в базе сохранено
+        console.warn(`⚠️ Failed to save JSON file for "${courseSlug}":`, fileError.message);
+      }
     } catch (error) {
+      console.error(`❌ Failed to save course "${courseSlug}":`, error);
       throw new Error(`Failed to save course: ${error.message}`);
     }
   }
@@ -101,6 +113,9 @@ export class CourseEditorService {
     data: any,
   ): Promise<void> {
     try {
+      // Удаляем MongoDB-специфичные поля
+      const { _id, __v, createdAt, updatedAt, ...cleanData } = data;
+      
       // Ищем курс в базе по slug
       const existingCourse = await this.courseModel.findOne({ slug: courseSlug });
 
@@ -110,11 +125,11 @@ export class CourseEditorService {
           { slug: courseSlug },
           {
             $set: {
-              coverImageUrl: data.coverImageUrl,
-              level: data.level,
-              price: data.price,
-              isPublished: data.isPublished,
-              translations: data.translations,
+              coverImageUrl: cleanData.coverImageUrl,
+              level: cleanData.level,
+              price: cleanData.price,
+              isPublished: cleanData.isPublished,
+              translations: cleanData.translations,
             },
           },
         );
@@ -123,11 +138,11 @@ export class CourseEditorService {
         // Создаем новый курс в базе
         await this.courseModel.create({
           slug: courseSlug,
-          coverImageUrl: data.coverImageUrl,
-          level: data.level,
-          price: data.price,
-          isPublished: data.isPublished,
-          translations: data.translations,
+          coverImageUrl: cleanData.coverImageUrl,
+          level: cleanData.level,
+          price: cleanData.price,
+          isPublished: cleanData.isPublished,
+          translations: cleanData.translations,
         });
         console.log(`✅ Course "${courseSlug}" created in database`);
       }

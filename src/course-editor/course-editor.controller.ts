@@ -101,10 +101,16 @@ export class CourseEditorController {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
+      console.log(`[CourseEditor] Saving course: ${slug}`);
       await this.courseEditorService.saveCourseData(slug, body.data);
+      console.log(`[CourseEditor] ✅ Course saved: ${slug}`);
       return { success: true };
     } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+      console.error(`[CourseEditor] ❌ Error saving course ${slug}:`, error);
+      throw new HttpException(
+        `Failed to save course: ${error.message}`,
+        HttpStatus.BAD_REQUEST,
+      );
     }
   }
 
