@@ -64,7 +64,7 @@ function App() {
   const loadCourses = async () => {
     try {
       const data = await courseApi.getAllCourses();
-      setCourses(data);
+      setCourses(data.items || data);
     } catch (error) {
       console.error('Failed to load courses:', error);
     }
