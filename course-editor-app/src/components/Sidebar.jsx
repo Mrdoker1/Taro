@@ -161,12 +161,14 @@ export function Sidebar({
           <Box style={{ flex: 1, minHeight: 0 }}>
             <ScrollArea h="100%" px="md">
             <Stack gap="xs">
-              {courses.map((slug) => {
-                const isSelected = selectedCourse === slug;
+              {courses.map((course) => {
+                const courseSlug = course.slug || course;
+                const courseTitle = course.title || courseSlug;
+                const isSelected = selectedCourse === courseSlug;
                 return (
                   <UnstyledButton
-                    key={slug}
-                    onClick={() => onSelectCourse(slug)}
+                    key={courseSlug}
+                    onClick={() => onSelectCourse(courseSlug)}
                     style={{
                       width: '100%',
                       padding: '10px 12px',
@@ -188,7 +190,7 @@ export function Sidebar({
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
-                    {slug}
+                    {courseTitle}
                   </UnstyledButton>
                 );
               })}
