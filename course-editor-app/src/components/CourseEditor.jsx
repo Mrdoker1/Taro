@@ -15,8 +15,9 @@ import {
   Switch,
   Title,
   UnstyledButton,
+  Alert,
 } from '@mantine/core';
-import { IconBook, IconPlus, IconDownload } from '@tabler/icons-react';
+import { IconBook, IconPlus, IconDownload, IconAlertTriangle } from '@tabler/icons-react';
 import {
   DndContext,
   closestCenter,
@@ -244,10 +245,27 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
     );
   };
 
+  const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+  const isSlugValid = slugRegex.test(courseData.slug);
+
   return (
     <Box style={{ flex: 1, display: 'flex', flexDirection: 'column', height: '100vh' }}>
       <ScrollArea flex={1}>
         <Box p="xl" style={{ maxWidth: 1200, margin: '0 auto' }}>
+          {/* Warning for invalid slug */}
+          {!isSlugValid && (
+            <Alert
+              icon={<IconAlertTriangle size={16} />}
+              title="Невалидный slug курса"
+              color="red"
+              mb="xl"
+            >
+              Slug курса "{courseData.slug}" содержит недопустимые символы. 
+              Используйте только строчные буквы, цифры и дефисы (например, "basic-tarot").
+              Этот курс не будет работать в приложении до исправления slug.
+            </Alert>
+          )}
+          
           {/* General Information */}
           <Paper p="xl" mb="xl">
             <Group justify="space-between" mb="xl">
@@ -261,10 +279,12 @@ export function CourseEditor({ course, onCourseChange, previewOpened, onPreviewC
                 label="Slug"
                 value={courseData.slug}
                 disabled
+                error={!isSlugValid}
                 styles={{
                   input: {
                     cursor: 'not-allowed',
                     opacity: 0.6,
+                    borderColor: !isSlugValid ? '#EF4444' : undefined,
                   },
                 }}
               />

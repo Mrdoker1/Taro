@@ -65,34 +65,17 @@ export class CourseEditorController {
 
   // Get all courses
   @Get('api/courses')
-  getAllCourses(@Headers('authorization') auth: string) {
+  async getAllCourses(@Headers('authorization') auth: string) {
     if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
-    const courses = this.courseEditorService.getAllCourses();
+    const courses = await this.courseEditorService.getAllCourses();
     return courses;
   }
 
-  // Get course content (raw TypeScript)
-  @Get('api/courses/:slug/raw')
-  getCourseRaw(
-    @Param('slug') slug: string,
-    @Headers('authorization') auth: string,
-  ) {
-    if (!auth || !auth.startsWith('Bearer ')) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    }
-    try {
-      const content = this.courseEditorService.getCourseContent(slug);
-      return { slug, content };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
-    }
-  }
-
-  // Get course data (parsed JSON)
+  // Get course data (from database)
   @Get('api/courses/:slug')
-  getCourse(
+  async getCourse(
     @Param('slug') slug: string,
     @Headers('authorization') auth: string,
   ) {
@@ -100,32 +83,14 @@ export class CourseEditorController {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
     try {
-      const data = this.courseEditorService.getCourseData(slug);
+      const data = await this.courseEditorService.getCourseData(slug);
       return { slug, data };
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.NOT_FOUND);
     }
   }
 
-  // Save course content (raw TypeScript)
-  @Put('api/courses/:slug/raw')
-  saveCourseRaw(
-    @Param('slug') slug: string,
-    @Body() body: { content: string },
-    @Headers('authorization') auth: string,
-  ) {
-    if (!auth || !auth.startsWith('Bearer ')) {
-      throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-    }
-    try {
-      this.courseEditorService.saveCourseContent(slug, body.content);
-      return { success: true };
-    } catch (error) {
-      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
-    }
-  }
-
-  // Save course data (from JSON)
+  // Save course data (to database and JSON file)
   @Put('api/courses/:slug')
   async saveCourse(
     @Param('slug') slug: string,

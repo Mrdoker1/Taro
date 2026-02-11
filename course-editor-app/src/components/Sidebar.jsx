@@ -164,6 +164,7 @@ export function Sidebar({
               {courses.map((course) => {
                 const courseSlug = course.slug || course;
                 const courseTitle = course.title || courseSlug;
+                const isValid = course.isValid !== false; // По умолчанию true для обратной совместимости
                 const isSelected = selectedCourse === courseSlug;
                 return (
                   <UnstyledButton
@@ -180,6 +181,7 @@ export function Sidebar({
                       textAlign: 'left',
                       transition: 'all 0.2s ease',
                       cursor: 'pointer',
+                      border: !isValid ? '1px solid #EF4444' : 'none',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = isSelected ? '#7c3aed' : '#27272A';
@@ -190,6 +192,7 @@ export function Sidebar({
                       e.currentTarget.style.color = isSelected ? '#FFFFFF' : '#A1A1AA';
                     }}
                   >
+                    {!isValid && '⚠️ '}
                     {courseTitle}
                   </UnstyledButton>
                 );

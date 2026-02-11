@@ -32,58 +32,67 @@ export class CourseEditorService {
     return username === this.ADMIN_USERNAME && password === this.ADMIN_PASSWORD;
   }
 
-  getAllCourses(): string[] {
-    const files = fs.readdirSync(this.coursesDataPath);
-    return files
-      .filter(file => file.endsWith('.course.ts') && file !== 'index.ts')
-      .map(file => file.replace('.course.ts', ''));
+  async getAllCourses(): Promise<Array<{ slug: string; title: string; isValid: boolean }>> {
+    // Загружаем все курсы из базы данных (включая невалидные)
+    const courses = await this.courseModel.find({}).exec();
+    
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    
+    return courses.map(course => ({
+      slug: course.slug,
+      title: course.translations?.ru?.title || course.slug,
+      isValid: slugRegex.test(course.slug),
+    }));
   }
 
-  getCourseContent(courseSlug: string): string {
-    const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.ts`);
-    if (!fs.existsSync(filePath)) {
-      throw new Error('Course not found');
-    }
-    return fs.readFileSync(filePath, 'utf-8');
-  }
-
-  // Парсинг курса из TypeScript файла в JSON
-  getCourseData(courseSlug: string): any {
-    const content = this.getCourseContent(courseSlug);
-    
-    // Извлекаем объект курса из TypeScript файла
-    // Это упрощенный парсер - в реальности можно использовать @babel/parser
-    const match = content.match(/export const \w+Course: Partial<Course> = ({[\s\S]*});/);
-    if (!match) {
-      throw new Error('Invalid course file format');
-    }
-    
-    // Преобразуем TypeScript объект в JSON (убираем trailing commas и т.д.)
-    const objectStr = match[1];
-    
-    // Используем eval для парсинга (в продакшене лучше использовать babel parser)
+  /**
+   * Получает данные курса из базы данных
+   */
+  async getCourseData(courseSlug: string): Promise<any> {
     try {
-      const courseData = eval(`(${objectStr})`);
-      return courseData;
+      // Сначала пытаемся загрузить из базы данных
+      const course = await this.courseModel.findOne({ slug: courseSlug }).exec();
+      
+      if (course) {
+        // Преобразуем Mongoose документ в plain object
+        return course.toObject();
+      }
+      
+      // Если курса нет в базе, пытаемся загрузить из JSON файла
+      const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
+      
+      if (fs.existsSync(filePath)) {
+        const fileContent = fs.readFileSync(filePath, 'utf-8');
+        const courseData = JSON.parse(fileContent);
+        
+        // Сохраняем в базу данных для будущего использования
+        await this.courseModel.create(courseData);
+        
+        return courseData;
+      }
+      
+      throw new Error('Course not found');
     } catch (error) {
-      throw new Error('Failed to parse course data');
+      throw new Error(`Failed to load course: ${error.message}`);
     }
   }
 
-  // Сохранение курса из JSON в TypeScript файл
+  /**
+   * Сохраняет курс в базу данных и в JSON файл
+   */
   async saveCourseData(courseSlug: string, data: any): Promise<void> {
-    const camelCaseName = this.toCamelCase(courseSlug);
-    
-    // Генерируем TypeScript файл
-    const content = `import { Course } from '../schemas/course.schema';
-
-export const ${camelCaseName}Course: Partial<Course> = ${JSON.stringify(data, null, 2)};
-`;
-    
-    this.saveCourseContent(courseSlug, content);
-    
-    // Обновляем базу данных
-    await this.syncCourseToDatabase(courseSlug, data);
+    try {
+      // 1. Сохраняем в базу данных
+      await this.syncCourseToDatabase(courseSlug, data);
+      
+      // 2. Сохраняем в JSON файл (для backup и version control)
+      const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
+      fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf-8');
+      
+      console.log(`✅ Course "${courseSlug}" saved to database and JSON file`);
+    } catch (error) {
+      throw new Error(`Failed to save course: ${error.message}`);
+    }
   }
 
   // Синхронизация курса с базой данных
@@ -128,90 +137,73 @@ export const ${camelCaseName}Course: Partial<Course> = ${JSON.stringify(data, nu
     }
   }
 
-  saveCourseContent(courseSlug: string, content: string): void {
-    const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.ts`);
-    fs.writeFileSync(filePath, content, 'utf-8');
-    this.updateIndexFile();
-  }
 
+  /**
+   * Создает новый курс в базе данных и JSON файл
+   */
   async createNewCourse(courseSlug: string): Promise<void> {
-    const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.ts`);
-    if (fs.existsSync(filePath)) {
-      throw new Error('Course already exists');
-    }
-
-    const newCourseData = {
-      slug: courseSlug,
-      coverImageUrl: 'https://images.unsplash.com/photo-1551269901-5c5e14c25df7?w=800&h=600&fit=crop',
-      level: 'beginner',
-      price: 0,
-      isPublished: true,
-      translations: {
-        ru: {
-          title: 'Новый курс',
-          description: 'Описание курса',
-          chapters: [],
-        },
-        en: {
-          title: 'New Course',
-          description: 'Course description',
-          chapters: [],
-        },
-      },
-    };
-
-    const template = `import { Course } from '../schemas/course.schema';
-
-export const ${this.toCamelCase(courseSlug)}Course: Partial<Course> = ${JSON.stringify(newCourseData, null, 2)};
-`;
-
-    fs.writeFileSync(filePath, template, 'utf-8');
-    this.updateIndexFile();
-    
-    // Создаем в базе данных
-    await this.syncCourseToDatabase(courseSlug, newCourseData);
-  }
-
-  async deleteCourse(courseSlug: string): Promise<void> {
-    const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.ts`);
-    if (!fs.existsSync(filePath)) {
-      throw new Error('Course not found');
-    }
-    
-    // Удаляем файл
-    fs.unlinkSync(filePath);
-    this.updateIndexFile();
-    
-    // Удаляем из базы данных
     try {
-      await this.courseModel.deleteOne({ slug: courseSlug });
-      console.log(`✅ Course "${courseSlug}" deleted from database`);
+      // Проверяем, существует ли курс в базе
+      const existingCourse = await this.courseModel.findOne({ slug: courseSlug }).exec();
+      if (existingCourse) {
+        throw new Error('Course already exists in database');
+      }
+
+      const newCourseData = {
+        slug: courseSlug,
+        coverImageUrl: 'https://images.unsplash.com/photo-1551269901-5c5e14c25df7?w=800&h=600&fit=crop',
+        level: 'beginner',
+        price: 0,
+        isPublished: true,
+        translations: {
+          ru: {
+            title: 'Новый курс',
+            description: 'Описание курса',
+            chapters: [],
+          },
+          en: {
+            title: 'New Course',
+            description: 'Course description',
+            chapters: [],
+          },
+        },
+      };
+
+      // Создаем курс в базе данных
+      await this.courseModel.create(newCourseData);
+      
+      // Сохраняем JSON файл
+      const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
+      fs.writeFileSync(filePath, JSON.stringify(newCourseData, null, 2), 'utf-8');
+      
+      console.log(`✅ New course "${courseSlug}" created`);
     } catch (error) {
-      console.error(`❌ Failed to delete course "${courseSlug}" from database:`, error);
+      throw new Error(`Failed to create course: ${error.message}`);
     }
   }
 
-  private updateIndexFile(): void {
-    const courses = this.getAllCourses();
-    const imports = courses
-      .map(
-        slug =>
-          `export { ${this.toCamelCase(slug)}Course } from './${slug}.course';`,
-      )
-      .join('\n');
-
-    const indexPath = path.join(this.coursesDataPath, 'index.ts');
-    fs.writeFileSync(indexPath, imports + '\n', 'utf-8');
+  /**
+   * Удаляет курс из базы данных и JSON файл
+   */
+  async deleteCourse(courseSlug: string): Promise<void> {
+    try {
+      // Удаляем из базы данных
+      const result = await this.courseModel.deleteOne({ slug: courseSlug });
+      
+      if (result.deletedCount === 0) {
+        throw new Error('Course not found in database');
+      }
+      
+      // Удаляем JSON файл (если существует)
+      const filePath = path.join(this.coursesDataPath, `${courseSlug}.course.json`);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+      
+      console.log(`✅ Course "${courseSlug}" deleted`);
+    } catch (error) {
+      throw new Error(`Failed to delete course: ${error.message}`);
+    }
   }
 
-  private toCamelCase(str: string): string {
-    return str
-      .split('-')
-      .map((word, index) =>
-        index === 0
-          ? word
-          : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
-      )
-      .join('');
-  }
 }
