@@ -3,9 +3,9 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { getServerConfig } from './utils/serverConfig'; // Import the new utility
 import { ValidationPipe } from '@nestjs/common';
-import * as express from 'express';
-import * as session from 'express-session';
-import * as path from 'path';
+import express from 'express';
+import session from 'express-session';
+import path from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
