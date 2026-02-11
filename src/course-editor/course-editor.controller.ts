@@ -152,6 +152,16 @@ export class CourseEditorController {
     if (!auth || !auth.startsWith('Bearer ')) {
       throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
     }
+    
+    // Валидация slug
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!body.slug || !slugRegex.test(body.slug)) {
+      throw new HttpException(
+        'Invalid slug. Use only lowercase letters, numbers, and hyphens (e.g., "basic-tarot")',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    
     try {
       await this.courseEditorService.createNewCourse(body.slug);
       return { success: true };

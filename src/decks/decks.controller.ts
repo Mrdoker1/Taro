@@ -353,9 +353,20 @@ export class DecksController {
   })
   async createDeck(@Body() deckData: any) {
     try {
+      // Валидация key
+      const keyRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+      if (deckData.key && !keyRegex.test(deckData.key)) {
+        throw new BadRequestException(
+          'Невалидный key. Используйте только строчные буквы, цифры и дефисы (например, "rider-waite")',
+        );
+      }
+      
       return await this.decksService.createDeck(deckData);
     } catch (error) {
       this.logger.error(`Ошибка при создании колоды: ${error.message}`);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException('Не удалось создать колоду');
     }
   }

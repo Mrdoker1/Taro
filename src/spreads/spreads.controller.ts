@@ -197,6 +197,15 @@ export class SpreadsController {
   })
   async createSpread(@Body() spreadData: any, @Res() res: Response) {
     try {
+      // Валидация key
+      const keyRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+      if (spreadData.key && !keyRegex.test(spreadData.key)) {
+        return res.status(HttpStatus.BAD_REQUEST).json({
+          statusCode: HttpStatus.BAD_REQUEST,
+          message: 'Невалидный key. Используйте только строчные буквы, цифры и дефисы (например, "three-cards")',
+        });
+      }
+      
       const spread = await this.spreadsService.createSpread(spreadData);
       return res.status(HttpStatus.CREATED).json(spread);
     } catch (error) {
