@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AppShell, Box, Title, Button, Group, TextInput, Modal, Breadcrumbs, Anchor, Text, Menu, ActionIcon } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
-import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight, IconDownload, IconUpload, IconDots } from '@tabler/icons-react';
+import { IconLogout, IconDeviceFloppy, IconTrash, IconEye, IconChevronRight, IconDownload, IconUpload, IconDots, IconSettings } from '@tabler/icons-react';
 import { Login } from './components/Login';
 import { Sidebar } from './components/Sidebar';
 import { CourseEditor } from './components/CourseEditor';
@@ -9,12 +9,14 @@ import { DecksEditor } from './components/DecksEditor';
 import { SpreadsEditor } from './components/SpreadsEditor';
 import { PromptTemplatesEditor } from './components/PromptTemplatesEditor';
 import { UsersEditor } from './components/UsersEditor';
+import { Settings } from './components/Settings';
 import BulkEmailModal from './components/BulkEmailModal';
 import { courseApi, decksApi, spreadsApi, promptTemplatesApi, usersApi } from './api/client';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeSection, setActiveSection] = useState('courses'); // courses, spreads, prompts
+  const [showSettings, setShowSettings] = useState(false);
   
   // Courses
   const [courses, setCourses] = useState([]);
@@ -1179,6 +1181,25 @@ function App() {
                 <Button
                   variant="subtle"
                   color="gray"
+                  leftSection={<IconSettings size={16} />}
+                  onClick={() => setShowSettings(true)}
+                  size="sm"
+                  styles={{
+                    root: {
+                      color: '#71717A',
+                      '&:hover': {
+                        backgroundColor: '#27272A',
+                        color: '#8B5CF6',
+                      },
+                    },
+                  }}
+                >
+                  Настройки
+                </Button>
+
+                <Button
+                  variant="subtle"
+                  color="gray"
                   leftSection={<IconLogout size={16} />}
                   onClick={handleLogout}
                   size="sm"
@@ -1245,7 +1266,11 @@ function App() {
         </AppShell.Navbar>
 
         <AppShell.Main>
-          {activeSection === 'courses' && (
+          {showSettings ? (
+            <Settings onBack={() => setShowSettings(false)} />
+          ) : (
+            <>
+              {activeSection === 'courses' && (
             courseData ? (
               <CourseEditor
                 course={courseData}
@@ -1297,6 +1322,8 @@ function App() {
               userData={userData}
               onUserChange={handleUserDataChange}
             />
+          )}
+            </>
           )}
         </AppShell.Main>
       </AppShell>

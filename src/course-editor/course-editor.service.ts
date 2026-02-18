@@ -4,6 +4,8 @@ import { Model } from 'mongoose';
 import { Course, CourseDocument } from '../courses/schemas/course.schema';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as bcrypt from 'bcryptjs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class CourseEditorService {
@@ -20,16 +22,58 @@ export class CourseEditorService {
     }
   }
 
-  // Статический логин/пароль (в продакшене лучше использовать env переменные)
-  private readonly ADMIN_USERNAME = 'admin';
-  private readonly ADMIN_PASSWORD = 'tarot2024';
-
   constructor(
     @InjectModel(Course.name) private courseModel: Model<CourseDocument>,
+    private configService: ConfigService,
   ) {}
 
-  validateCredentials(username: string, password: string): boolean {
-    return username === this.ADMIN_USERNAME && password === this.ADMIN_PASSWORD;
+  async validateCredentials(username: string, password: string): Promise<boolean> {
+    const validUsername = this.configService.get<string>('COURSE_EDITOR_USERNAME');
+    const passwordHash = this.configService.get<string>('COURSE_EDITOR_PASSWORD_HASH');
+    
+    if (!validUsername || !passwordHash) {
+      throw new Error('Configuration error: credentials not properly set');
+    }
+    
+    if (username !== validUsername) {
+      return false;
+    }
+    
+    return await bcrypt.compare(password, passwordHash);
+  }
+
+  async changePassword(oldPassword: string, newPassword: string): Promise<boolean> {
+    const passwordHash = this.configService.get<string>('COURSE_EDITOR_PASSWORD_HASH');
+    
+    if (!passwordHash) {
+      throw new Error('Configuration error: password hash not set');
+    }
+    
+    // Проверяем старый пароль
+    const isValidOldPassword = await bcrypt.compare(oldPassword, passwordHash);
+    if (!isValidOldPassword) {
+      return false;
+    }
+    
+    // Генерируем новый хеш
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    
+    // Сохраняем новый хеш в файл .env
+    const envPath = path.join(process.cwd(), '.env');
+    let envContent = fs.readFileSync(envPath, 'utf-8');
+    
+    // Заменяем старый хеш на новый
+    envContent = envContent.replace(
+      /COURSE_EDITOR_PASSWORD_HASH=.*/,
+      `COURSE_EDITOR_PASSWORD_HASH=${newPasswordHash}`
+    );
+    
+    fs.writeFileSync(envPath, envContent, 'utf-8');
+    
+    // Важно: обновляем переменную окружения в текущем процессе
+    process.env.COURSE_EDITOR_PASSWORD_HASH = newPasswordHash;
+    
+    return true;
   }
 
   async getAllCourses(): Promise<Array<{ slug: string; title: string; isValid: boolean }>> {
