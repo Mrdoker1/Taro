@@ -32,6 +32,18 @@ export const courseApi = {
     return response.data;
   },
 
+  changePassword: async (oldPassword, newPassword) => {
+    const response = await axios.post('/course-editor/api/change-password', {
+      oldPassword,
+      newPassword,
+    }, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem('editor-token')}`,
+      },
+    });
+    return response.data;
+  },
+
   // Courses
   getAllCourses: async () => {
     const response = await api.get('/courses');
