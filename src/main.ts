@@ -6,6 +6,8 @@ import { ValidationPipe } from '@nestjs/common';
 import express from 'express';
 import session from 'express-session';
 import path from 'path';
+import basicAuth from 'express-basic-auth';
+import * as bcrypt from 'bcryptjs';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -69,7 +71,7 @@ async function bootstrap() {
   );
 
   configureCors(app);
-  setupSwagger(app);
+  setupSwaggerWithAuth(app);
   setupStaticRoutes(app);
 
   const { port, server } = getServerConfig();
@@ -130,7 +132,40 @@ function configureCors(app) {
   });
 }
 
-function setupSwagger(app) {
+function setupSwaggerWithAuth(app) {
+  // Используем те же credentials что и для course-editor (с bcrypt хешем)
+  const validUsername = process.env.COURSE_EDITOR_USERNAME || 'admin';
+  const passwordHash = process.env.COURSE_EDITOR_PASSWORD_HASH;
+
+  if (!passwordHash) {
+    console.warn('⚠️ COURSE_EDITOR_PASSWORD_HASH not set, using default password');
+  }
+
+  app.use(
+    '/api',
+    basicAuth({
+      authorizer: (username, password) => {
+        // Синхронная проверка username
+        const usernameMatch = basicAuth.safeCompare(username, validUsername);
+        
+        if (!usernameMatch) {
+          return false;
+        }
+
+        // Проверяем пароль через bcrypt
+        if (!passwordHash) {
+          // Если хеш не установлен, используем дефолтный пароль 'admin123'
+          return basicAuth.safeCompare(password, 'admin123');
+        }
+
+        return bcrypt.compareSync(password, passwordHash);
+      },
+      authorizeAsync: false,
+      challenge: true,
+      realm: 'Taro API Documentation',
+    }),
+  );
+
   const config = new DocumentBuilder()
     .setTitle('Taro App API')
     .setDescription('REST API для сервиса Taro App')
